@@ -3,6 +3,7 @@ library(shiny)
 library(shinythemes)
 library(shinycssloaders)
 library(shinydashboard)
+library(shinyalert)
 library(DT)
 
 ## function to capture console updates -----------------------------------------
@@ -10,6 +11,9 @@ library(DT)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
+  
+  useShinyalert(),  # Set up shinyalert
+  
   ## links css style sheet in www folder
   tags$head(
     tags$link(rel="stylesheet", type="text/css", href="styles.css")),
@@ -90,13 +94,30 @@ server <- function(input, output) {
     DBI::dbDisconnect(mydb)
     closeAllConnections()
     
+    d_process<- reactive({
+       data_log_output<- read.table("www/r_output.txt", header = T,
+                                   fill = T, check.names = F, row.names = NULL,
+                                   na.strings = T)
+    })
+
+    
     output$status <- renderTable({
-      #req(input$create)
-
-      data_log_output<- read.table("www/r_output.txt", header = T,
-                        fill = T, check.names = F, row.names = NULL,
-                        na.strings = T)
-
+      data_log_output<- d_process()
+      req(data_log_output)
+      
+      
+      
+      status_check<- substring(data_log_output[nrow(data_log_output),], 
+                first = nchar(data_log_output[nrow(data_log_output),])-24,
+                last = nchar(data_log_output[nrow(data_log_output),]))
+      ## first one is NULL so needs to check 2nd
+      if (status_check[2] == "**Batch Import Complete**") {
+        shinyalert("Niceee!", "**Batch Import Complete**", type = "success")
+      } else
+        shinyalert("Oops!", "Something went wrong. Check log table or file", type = "error")
+      
+      data_log_output
+      
     })
     
 
@@ -109,7 +130,20 @@ server <- function(input, output) {
                tags$p("See www/r_output.txt for data log file")
              ))
     
+    # if (data_log_output) {
+    #   
+    # }
+
+    
+    # # Show a modal when the button is pressed
+    # shinyalert("Oops!", "Something went wrong.", type = "error")
+    # 
+    # # Show a modal when the button is pressed
+    # shinyalert("Oops!", "Something went wrong.", type = "error")
+    
     })
+  
+
 
 
 }
