@@ -14,7 +14,7 @@ ui <- fluidPage(
   tags$head(
     tags$link(rel="stylesheet", type="text/css", href="styles.css")),
   ## general theme
-  theme = shinytheme("paper"), collapsable = F,
+  theme = shinytheme("simplex"),
 
   # Application title
   
