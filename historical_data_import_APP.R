@@ -47,12 +47,13 @@ ui <- fluidPage(
 
           tabPanel(
             "Status",
-            withSpinner(textOutput("status")
+            withSpinner(tableOutput("status")
                         # proxy.height = "150px",
                         # image.height = "150px" # ,
                         # image = "rat-72.gif"
             )
-          ) # ,
+          )#,
+          
           # tabPanel(
           #   "Import Summary",
           #   withSpinner(DT::dataTableOutput("status2"),
@@ -71,40 +72,46 @@ ui <- fluidPage(
 server <- function(input, output) {
   
   ## initial NULL Value - keeps spinner from showing at app load
-  output$status <- renderText(NULL)
+  output$status <- renderTable(NULL)
   
   observeEvent(input$create, {
+    
+
+    sink("www/r_output.txt")
+  
     ## pointing to VGS functions for batch data import
     source("Functions/VGS_functions_R.R", local = T)
     source("Functions/historical_data_importer.R", local = T)
     read_import_data(Protocol = input$Protocol, ServerKey = input$ServerKey, Protocol_2 = input$Protocol_2)
     
+    #sink()
+    
     ## close connections from local VGS db
     DBI::dbDisconnect(mydb)
     closeAllConnections()
     
+    output$status <- renderTable({
+      #req(input$create)
+
+      data_log_output<- read.table("www/r_output.txt", header = T,
+                        fill = T, check.names = F, row.names = NULL,
+                        na.strings = T)
+
+    })
+    
+
     ## link to vgs / chaz voice ui pop ups
     insertUI(selector = "#create",
              where = "afterEnd",
              ui = tagList(
-               tags$a(class="vgsLink", href="https://portal.vgs.arizona.edu/containers/schemaroots/208c50da-de76-4f42-84b5-1b426aa0ed5b", "VGS Data Portal Link"),
-               tags$audio(src = "I love the VGS team.mp3", type = "audio/mp3", autoplay = T, controls = NA, style="display:none;")
+               tags$a(class="vgsLink", href="https://portal.vgs.arizona.edu/", "VGS Data Portal Link"),
+               tags$audio(src = "I love the VGS team.mp3", type = "audio/mp3", autoplay = T, controls = NA, style="display:none;"),
+               tags$p("See www/r_output.txt for data log file")
              ))
     
     })
-  
-  
-  output$status <- renderText({
-    req(input$create)
-    print(paste0("Data inserted into VGS50.db -> ", Sys.Date()))
-    
-  })
-  
-  # output$status2 <- DT::renderDataTable({
-  #   output_list<- data()
-  #   output_list
-  # })
-  
+
+
 }
 
 # Run the application

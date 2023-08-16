@@ -1,12 +1,13 @@
 /* background color */
 .container-fluid {
-    background-image: url("unsplash.jpg");
+    /*background-image: url("unsplash.jpg");
     background-repeat: repeat-x;
     background-attachment: fixed;
     background-size: 1600px 1600px;
+    */
     opacity: 0.9;
-    /* background-color: #007BA1; 
-    opacity: 0.9; */
+    background-color: teal; 
+    opacity: 0.9; 
 }
 /* tag$a link styles */
     a .vgsLink:link {
