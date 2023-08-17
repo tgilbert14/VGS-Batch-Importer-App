@@ -15,8 +15,10 @@ ui <- fluidPage(
   #useShinyalert(),  # Set up shinyalert
   
   ## links css style sheet in www folder
-  tags$head(
-    tags$link(rel="stylesheet", type="text/css", href="styles.css")),
+  suppressWarnings(
+    tags$head(
+      tags$link(rel="stylesheet", type="text/css", href="styles.css"))
+      ),
   ## general theme
   theme = shinytheme("simplex"),
 
