@@ -22,6 +22,11 @@ read_import_data <- function(Protocol, ServerKey, Protocol_2 = "NULL") {
   
   ## choosing file to import
   data_file <<- choose.files("Choose Historical Data to import (excel)")
+  
+  shinyalert("Yum!!!", "Crunching Data Now... 
+             Please wait for next status update",
+             type = "info", timer = 4000)
+  
   ## reading in sheets to list
   historical_data <<- list()
   ## go through each batch file

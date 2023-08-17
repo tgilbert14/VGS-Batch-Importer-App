@@ -12,7 +12,7 @@ library(DT)
 # Define UI for application that draws a histogram
 ui <- fluidPage(
   
-  useShinyalert(),  # Set up shinyalert
+  #useShinyalert(),  # Set up shinyalert
   
   ## links css style sheet in www folder
   tags$head(
@@ -77,9 +77,11 @@ server <- function(input, output) {
   
   ## initial NULL Value - keeps spinner from showing at app load
   output$status <- renderTable(NULL)
+
   
   observeEvent(input$create, {
-    
+    req(input$Protocol)
+
     ## creating log file to track progress
     sink("www/r_output.txt")
   
