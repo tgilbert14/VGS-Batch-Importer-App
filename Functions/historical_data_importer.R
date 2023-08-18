@@ -62,7 +62,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
       ## Species not in VGS .db species list = stop()
       if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) {
         shinyalert("Species Not in VGS!", paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect), type = "error")
-        Sys.sleep(8)
+        Sys.sleep(15)
       }
       if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect))
       
