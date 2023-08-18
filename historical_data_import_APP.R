@@ -1,56 +1,50 @@
-
+## global - libraries
 library(shiny)
 library(shinythemes)
 library(shinycssloaders)
 library(shinydashboard)
 library(shinyalert)
 library(DT)
+## end of global
 
-# Define UI
+## -----------------------------------------------------------------------------
+## Define UI
 ui <- fluidPage(
   
   ## general theme
   theme = shinytheme("flatly"),
 
   titlePanel("Historical Data Importer"),
-  # Sidebar
+
   sidebarLayout(
     sidebarPanel(
       ## inputs for side dashboard
       shiny::selectInput(inputId = "Protocol", label = "Select Protocol for Import", choices = c(" "="NULL", "R6 Rogue River - Tally", "R6 Rogue River Nested Freq/GC/Line Intercept"), multiple = F, selected = F),
       ## pop up UI's here after Protocol entry - see server side
       shiny::actionButton(inputId = "create", label = "Batch Import Data", width = "100%")
-    ),
-    
+    ), ## end of side bar panal
    
     ## output area of shiny app - box
     shinydashboard::box(solidHeader = T, width = 8,
       tabsetPanel(type = "tabs",
-        #header = "Select all relevant options - need server key",
-        #fluidRow(
-          tabPanel(
-            "Status",
-            withSpinner(tableOutput("status")
-            )
-          )#,
-          # tabPanel(
-          #   "Sites Created",
-          #   withSpinner(tableOutput("sitesCreated")
-          #   ),
-          # )
-        #)
-      )
-    )
-  )
-)
+                  tabPanel(
+                    "Status",
+                    withSpinner(tableOutput("status"))
+                  ) ## end of tab panal - status
+      ) ## end of tab set panal(s)
+    ) ## end of box display
+  ) ## end of sidebar layout
+) ## end of UI
+## -----------------------------------------------------------------------------
 
-# Define server logic required to draw a histogram
+## -----------------------------------------------------------------------------
+## Define server logic
 server <- function(input, output) {
   
   ## initial NULL Value - keeps spinner from showing at app load
   output$status <- renderTable(NULL)
   
-  ## for UI drop downs ---------------------------------------------------------
+  ## for UI drop downs ----
   observe({
     ## if value is selected ->
     if (input$Protocol != "NULL") {
@@ -80,15 +74,14 @@ server <- function(input, output) {
                                 multiple = F, selected = T))
     }
   })
-  ## end of UI drop downs ------------------------------------------------------
-
+  ## end of UI drop downs ----
 
   observeEvent(input$create, {
     req(input$Protocol)
-
+    
     ## creating log file to track progress
     sink("www/r_output.txt")
-  
+    
     ## pointing to VGS functions for batch data import
     source("Functions/VGS_functions_R.R", local = T)
     source("Functions/historical_data_importer.R", local = T)
@@ -99,19 +92,18 @@ server <- function(input, output) {
     closeAllConnections()
     
     d_process<- reactive({
-       data_log_output<- read.table("www/r_output.txt", header = T,
+      data_log_output<- read.table("www/r_output.txt", header = T,
                                    fill = T, check.names = F, row.names = NULL,
                                    na.strings = T)
-    })
-
+    }) ## end of reactive data log
     
     output$status <- renderTable({
       data_log_output<- d_process()
       req(data_log_output)
       
       status_check<- substring(data_log_output[nrow(data_log_output),], 
-                first = nchar(data_log_output[nrow(data_log_output),])-24,
-                last = nchar(data_log_output[nrow(data_log_output),]))
+                               first = nchar(data_log_output[nrow(data_log_output),])-24,
+                               last = nchar(data_log_output[nrow(data_log_output),]))
       
       ## first one is NULL so needs to check 2nd
       ## if reaches final output in function - sucessful = got past function checks
@@ -122,19 +114,10 @@ server <- function(input, output) {
       
       data_log_output
       
-    })
-    
-    # ## link to vgs / chaz voice ui pop ups
-    # insertUI(selector = "#create",
-    #          where = "afterEnd",
-    #          ui = tagList(
-    #            tags$a(class="vgsLink", href="https://portal.vgs.arizona.edu/", "VGS Data Portal Link"),
-    #            tags$audio(src = "I love the VGS team.mp3", type = "audio/mp3", autoplay = T, controls = NA, style="display:none;"),
-    #            tags$p("See www/r_output.txt for data log file")
-    #          ))
-    
-    })
-}
+    }) ## end of render table
+  }) ## end of observe event
+} ## end of server
+## -----------------------------------------------------------------------------
 
 # Run the application
 shinyApp(ui = ui, server = server)
