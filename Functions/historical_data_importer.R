@@ -61,15 +61,15 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
       ## alerts for app stoppages ----------------------------------------------
       ## Species not in VGS .db species list = stop()
       if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) {
-        shinyalert("Nested Freq Insert Error!", paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect), type = "error")
+        shinyalert("Species Not in VGS!", paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect), type = "error")
         Sys.sleep(8)
       }
       if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect))
       
       ## Check length of species qualifier = stop() if over 20 char
       if (nchar(data[d, ][2]) > 20) {
-        shinyalert("Nested Freq Insert Error!", paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char)"), type = "error")
-        Sys.sleep(8)
+        shinyalert("Species Qualifier too long!", paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (>20) for belt#", Transect," - ",data_file[batch_file]), type = "error")
+        Sys.sleep(20)
       }
       if (nchar(data[d, ][2]) > 20) stop(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char)"))
       ## end of checks to stop app for nested freq -----------------------------
@@ -1065,7 +1065,18 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
   
   ## choosing file to import
   data_file <<- choose.files("Choose Historical Data to import (excel)")
-  
+  the_void <- character(0)
+
+  if (identical(data_file, the_void)) {
+    ## alert for data import start ->
+    shinyalert("No Data Selected", "Refresh the page and choose a file!",
+               imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
+               imageWidth = 100, imageHeight = 100, type = "error", 
+               timer = 2500)
+    Sys.sleep(5)
+    if (identical(data_file, the_void)) stop(paste0("No Data Selected - Choose a file!"))
+  }
+
   ## alert for data import start ->
   shinyalert("...is crunching your data now", "YUM! Please wait for next update.",
              imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",

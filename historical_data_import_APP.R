@@ -9,13 +9,6 @@ library(DT)
 # Define UI
 ui <- fluidPage(
   
-  #not using css styles
-  # ## links css style sheet in www folder
-  # suppressWarnings(
-  #   tags$head(
-  #     tags$link(rel="stylesheet", type="text/css", href="styles.css"))
-  #     ),
-  
   ## general theme
   theme = shinytheme("flatly"),
 
@@ -25,8 +18,7 @@ ui <- fluidPage(
     sidebarPanel(
       ## inputs for side dashboard
       shiny::selectInput(inputId = "Protocol", label = "Select Protocol for Import", choices = c(" "="NULL", "R6 Rogue River - Tally", "R6 Rogue River Nested Freq/GC/Line Intercept"), multiple = F, selected = F),
-      ## pop up UI here
-      
+      ## pop up UI's here after Protocol entry - see server side
       shiny::actionButton(inputId = "create", label = "Batch Import Data", width = "100%")
     ),
     
