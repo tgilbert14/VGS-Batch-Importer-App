@@ -6,10 +6,7 @@ library(shinydashboard)
 library(shinyalert)
 library(DT)
 
-## function to capture console updates -----------------------------------------
-## -----------------------------------------------------------------------------
-
-# Define UI for application that draws a histogram
+# Define UI
 ui <- fluidPage(
   
   #not using css styles
@@ -22,51 +19,29 @@ ui <- fluidPage(
   ## general theme
   theme = shinytheme("flatly"),
 
-  # Application title
-  
   titlePanel("Historical Data Importer"),
-  # Sidebar with a slider input for number of bins
+  # Sidebar
   sidebarLayout(
     sidebarPanel(
       ## inputs for side dashboard
-      shiny::selectInput(inputId = "Protocol", label = "Select Protocol #1", choices = c("R6 Rogue River - Tally", "R6 Rogue River Nested Freq/GC/Line Intercept", "USFS R4..."), multiple = F, selected = F),
-      shiny::selectInput(inputId = "Protocol_2", label = "Select Protocol #2 (if needed)", choices = c("Only 1 Protocol" = "NULL", "R6 Rogue River - Tally", "R6 Rogue River Nested Freq/GC/Line Intercept", "USFS R4..."), multiple = F, selected = F),
-      shiny::selectInput(inputId = "ServerKey", label = "Select Relevant Server Key", choices = c(" " = "NULL", "USFS R6-RR", "USFS R4-BT", "NRCS AZ"), multiple = F, selected = F),
-      ## tag here for button
+      shiny::selectInput(inputId = "Protocol", label = "Select Protocol for Import", choices = c("R6 Rogue River - Tally", "R6 Rogue River Nested Freq/GC/Line Intercept"), multiple = F, selected = F),
+      shiny::selectInput(inputId = "Protocol_2", label = "2nd Protocol?", choices = c("Only 1 Protocol"="NULL", "R6 Rogue River - Tally", "R6 Rogue River Nested Freq/GC/Line Intercept"), multiple = F, selected = F),
+      
+      shiny::selectInput(inputId = "ServerKey", label = "Select Organization", choices = c(" "="NULL", "Rogue River-Siskiyou National Forests"="USFS R6-RR", "Bridger-Teton National Forest"="USFS R4-BT", "NRCS-Arizona"="NRCS AZ"), multiple = F, selected = F),
       shiny::actionButton(inputId = "create", label = "Batch Import Data", width = "100%")
     ),
     
    
     ## output area of shiny app - box
-    shinydashboard::box(solidHeader = T,
-      width = 8,
-      #status = "primary",
-      #title = "",
-      
-      tabsetPanel(type = "pills",
-                  
-        header = "Select all relevant options - need server key",
-        #footer = 'See variable output_list to see what files were processed when complete...',
-        
+    shinydashboard::box(solidHeader = T, width = 8,
+      tabsetPanel(type = "tabs",
+        #header = "Select all relevant options - need server key",
         fluidRow(
-          
           tabPanel(
             "Status",
             withSpinner(tableOutput("status")
-                        # proxy.height = "150px",
-                        # image.height = "150px" # ,
-                        # image = "rat-72.gif"
             )
-          )#,
-          
-          # tabPanel(
-          #   "Import Summary",
-          #   withSpinner(DT::dataTableOutput("status2"),
-          #               proxy.height = "150px",
-          #               image.height = "150px"#,
-          #               #image = "rat-72.gif"
-          #   )
-          # )
+          )
         )
       )
     )
