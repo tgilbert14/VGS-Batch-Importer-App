@@ -899,10 +899,9 @@ create_site <- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date,
   ## Start of data inserting ---------------------------------------------------
   ## specific to R6 RR
   if (ServerKey == "USFS R6-RR") {
-    # stop("stoppeding to check for protocol insert...S")
-    
-    ## Set FK_Event - Query .db for correct PK_Event
-    ## complex for no reason - ehhhhhh - hard code query for EventName
+
+    ## Set FK_Event - Query .db for correct PK_Event ->
+    ## works...
     find_event_guid <- paste0("Select DISTINCT quote(PK_Event), ProtocolName from Protocol
     INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
     INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
@@ -916,7 +915,8 @@ create_site <- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date,
     
     ## GC tally data - done on meta-data page
     print(paste0("Parsing Data for GC Tally Data..."))
-    ## saving gc data only with no column titles
+    
+    ## saving gc data only with no column titles - RR specific
     gc_data <- data_import[c(4:9), c(4:5)]
     ## get rid of NA columns with no species listed
     gc_data <- gc_data %>%
@@ -977,6 +977,8 @@ insert_data <- function(data, FK_Event, method, FK_Species, Transect = "NULL", S
   # cValue="NULL"
   # cValue2="NULL"
   # cValue3="NULL"
+  
+  ## setting sync key/states
   SyncKey <- 33
   SyncState <- 1
   

@@ -12,15 +12,15 @@ library(DT)
 # Define UI for application that draws a histogram
 ui <- fluidPage(
   
-  #useShinyalert(),  # Set up shinyalert
+  #not using css styles
+  # ## links css style sheet in www folder
+  # suppressWarnings(
+  #   tags$head(
+  #     tags$link(rel="stylesheet", type="text/css", href="styles.css"))
+  #     ),
   
-  ## links css style sheet in www folder
-  suppressWarnings(
-    tags$head(
-      tags$link(rel="stylesheet", type="text/css", href="styles.css"))
-      ),
   ## general theme
-  theme = shinytheme("simplex"),
+  theme = shinytheme("flatly"),
 
   # Application title
   
@@ -31,9 +31,9 @@ ui <- fluidPage(
       ## inputs for side dashboard
       shiny::selectInput(inputId = "Protocol", label = "Select Protocol #1", choices = c("R6 Rogue River - Tally", "R6 Rogue River Nested Freq/GC/Line Intercept", "USFS R4..."), multiple = F, selected = F),
       shiny::selectInput(inputId = "Protocol_2", label = "Select Protocol #2 (if needed)", choices = c("Only 1 Protocol" = "NULL", "R6 Rogue River - Tally", "R6 Rogue River Nested Freq/GC/Line Intercept", "USFS R4..."), multiple = F, selected = F),
-      shiny::selectInput(inputId = "ServerKey", label = "Select Relevant Server Key", choices = c("No ServerKey" = "NULL", "USFS R6-RR", "USFS R4-BT", "NRCS AZ"), multiple = F, selected = F),
+      shiny::selectInput(inputId = "ServerKey", label = "Select Relevant Server Key", choices = c(" " = "NULL", "USFS R6-RR", "USFS R4-BT", "NRCS AZ"), multiple = F, selected = F),
       ## tag here for button
-      shiny::actionButton(inputId = "create", label = "Batch Import Data")
+      shiny::actionButton(inputId = "create", label = "Batch Import Data", width = "100%")
     ),
     
    
@@ -50,7 +50,6 @@ ui <- fluidPage(
         
         fluidRow(
           
-
           tabPanel(
             "Status",
             withSpinner(tableOutput("status")
@@ -110,6 +109,7 @@ server <- function(input, output) {
       status_check<- substring(data_log_output[nrow(data_log_output),], 
                 first = nchar(data_log_output[nrow(data_log_output),])-24,
                 last = nchar(data_log_output[nrow(data_log_output),]))
+      
       ## first one is NULL so needs to check 2nd
       ## if reaches final output in function - sucessful = got past function checks
       if (status_check[2] == "**Batch Import Complete**") {
