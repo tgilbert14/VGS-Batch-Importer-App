@@ -24,10 +24,9 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       ## inputs for side dashboard
-      shiny::selectInput(inputId = "Protocol", label = "Select Protocol for Import", choices = c("R6 Rogue River - Tally", "R6 Rogue River Nested Freq/GC/Line Intercept"), multiple = F, selected = F),
-      shiny::selectInput(inputId = "Protocol_2", label = "2nd Protocol?", choices = c("Only 1 Protocol"="NULL", "R6 Rogue River - Tally", "R6 Rogue River Nested Freq/GC/Line Intercept"), multiple = F, selected = F),
+      shiny::selectInput(inputId = "Protocol", label = "Select Protocol for Import", choices = c(" "="NULL", "R6 Rogue River - Tally", "R6 Rogue River Nested Freq/GC/Line Intercept"), multiple = F, selected = F),
+      ## pop up UI here
       
-      shiny::selectInput(inputId = "ServerKey", label = "Select Organization", choices = c(" "="NULL", "Rogue River-Siskiyou National Forests"="USFS R6-RR", "Bridger-Teton National Forest"="USFS R4-BT", "NRCS-Arizona"="NRCS AZ"), multiple = F, selected = F),
       shiny::actionButton(inputId = "create", label = "Batch Import Data", width = "100%")
     ),
     
@@ -36,13 +35,18 @@ ui <- fluidPage(
     shinydashboard::box(solidHeader = T, width = 8,
       tabsetPanel(type = "tabs",
         #header = "Select all relevant options - need server key",
-        fluidRow(
+        #fluidRow(
           tabPanel(
             "Status",
             withSpinner(tableOutput("status")
             )
-          )
-        )
+          )#,
+          # tabPanel(
+          #   "Sites Created",
+          #   withSpinner(tableOutput("sitesCreated")
+          #   ),
+          # )
+        #)
       )
     )
   )
@@ -53,8 +57,40 @@ server <- function(input, output) {
   
   ## initial NULL Value - keeps spinner from showing at app load
   output$status <- renderTable(NULL)
-
   
+  ## for UI drop downs ---------------------------------------------------------
+  observe({
+    ## if value is selected ->
+    if (input$Protocol != "NULL") {
+
+      ## changes input depending on Protocol selected
+      if (input$Protocol == "R6 Rogue River - Tally") {
+        p2 <- c("R6 Rogue River Nested Freq/GC/Line Intercept", "No"="NULL")
+        filter_keys <- c("Rogue River-Siskiyou National Forests"="USFS R6-RR")
+      }
+      if (input$Protocol == "R6 Rogue River Nested Freq/GC/Line Intercept") {
+        p2 <- c("R6 Rogue River - Tally", "No"="NULL")
+        filter_keys <- c("Rogue River-Siskiyou National Forests"="USFS R6-RR")
+      }
+      
+      ## insert selection for protocol #2
+      insertUI(selector = "div:has(> #Protocol)",
+               where = "afterEnd",
+               ui = selectInput(inputId = "Protocol_2", label = "2nd Protocol?",
+                                choices = p2,
+                                multiple = F, selected = T))
+      
+      ## insert selection for server Key for parsing data
+      insertUI(selector = "div:has(> #Protocol_2)",
+               where = "afterEnd",
+               ui = selectInput(inputId = "ServerKey", label = "Select Organization",
+                                choices = filter_keys,
+                                multiple = F, selected = T))
+    }
+  })
+  ## end of UI drop downs ------------------------------------------------------
+
+
   observeEvent(input$create, {
     req(input$Protocol)
 

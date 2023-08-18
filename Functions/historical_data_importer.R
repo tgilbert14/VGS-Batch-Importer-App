@@ -57,11 +57,22 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     
     d <- 1
     while (d < nrow(data) + 1) {
-      ## for each species
-      ## check if in vgs species list or stop script
+      
+      ## alerts for app stoppages ----------------------------------------------
+      ## Species not in VGS .db species list = stop()
+      if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) {
+        shinyalert("Nested Freq Insert Error!", paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect), type = "error")
+        Sys.sleep(8)
+      }
       if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect))
-      ## check length of species qualifier
+      
+      ## Check length of species qualifier = stop() if over 20 char
+      if (nchar(data[d, ][2]) > 20) {
+        shinyalert("Nested Freq Insert Error!", paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char)"), type = "error")
+        Sys.sleep(8)
+      }
       if (nchar(data[d, ][2]) > 20) stop(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char)"))
+      ## end of checks to stop app for nested freq -----------------------------
       
       ## for each species - format if Species Qualifier is not null
       if (data[d, ][2] != "NULL") {
@@ -535,7 +546,7 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   FK_Type_Protocol <- tolower(FK_Type_Protocol)
   
   if (length(FK_Type_Protocol) == 0) {
-    shinyalert("Missing Protocol!", "Import protocol into VGS first and try again", type = "error")
+    shinyalert("Missing Protocol!", paste0("Import protocol ",ProtocolName," into VGS first and try again"), type = "error")
     Sys.sleep(5)
   }
   
@@ -766,6 +777,11 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
     TypeList_info <- DBI::dbGetQuery(mydb, find_protocol_2)
     
     FK_Type_Protocol <- TypeList_info$`quote(PK_Type)`
+    
+    if (length(FK_Type_Protocol) == 0) {
+      shinyalert("Missing Protocol!", paste0("Import protocol ",ProtocolName_2," into VGS first and try again"), type = "error")
+      Sys.sleep(5)
+    }
     
     ## check if found protocol
     if (length(FK_Type_Protocol) == 0) stop(paste0(ProtocolName_2, " not in VGS -> import first"))
@@ -1051,7 +1067,7 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
   data_file <<- choose.files("Choose Historical Data to import (excel)")
   
   ## alert for data import start ->
-  shinyalert("...is crunching your data now...", "YUM! Please wait for next update.",
+  shinyalert("...is crunching your data now", "YUM! Please wait for next update.",
              imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
              imageWidth = 100, imageHeight = 100, type = "success", 
              timer = 2500)
