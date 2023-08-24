@@ -26,13 +26,16 @@ if (nrow(nf_data) > 0) {
   nest_freq_ready <- nf_data %>% filter(nf_data$...25 != 0)
   # View(nest_freq_ready)
   
+  ## searching for specific term for specific protocol
+  term <- "Standard"
+  
   ## Set FK_Event - Query .db for correct PK_Event
   ## complex for no reason - ehhhhhh
   find_event_guid <- paste0("Select DISTINCT quote(PK_Event), ProtocolName from Protocol
 INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
 INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
 INNER JOIN Site ON Site.PK_Site = Event.FK_Site
-where ProtocolName LIKE'%Nested Freq%' AND Protocol.Date = '", event_date, "'
+where ProtocolName LIKE '%",term,"%' AND Protocol.Date = '", event_date, "'
 AND SiteID = '", site_name, "'", " AND
 EventName = 'Frequency (by quadrat)'")
   

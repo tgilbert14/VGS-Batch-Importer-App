@@ -5,24 +5,31 @@ library(shinycssloaders)
 library(shinydashboard)
 library(shinyalert)
 library(DT)
+#library(shinyWidgets)
 ## end of global
 
 ## -----------------------------------------------------------------------------
-## Define UI
+## Define UI 
 ui <- fluidPage(
   
   ## general theme
   theme = shinytheme("flatly"),
 
   titlePanel("Historical Data Importer"),
-
+  
   sidebarLayout(
     sidebarPanel(
+      
       ## inputs for side dashboard
-      shiny::selectInput(inputId = "Protocol", label = "Select Protocol for Import", choices = c(" "="NULL", "R6 Rogue River - Tally", "R6 Rogue River Nested Freq/GC/Line Intercept"), multiple = F, selected = F),
+      shiny::selectInput(inputId = "Protocol", label = "Select Protocol for Import",
+                         choices = c(" "="NULL",
+                                     "USFS R6 Rogue River - Tally",
+                                     "USFS R6 Rogue River Standard",
+                                     "USFS R4 BTNF Range Monitoring"),
+                         multiple = F, selected = F),
       ## pop up UI's here after Protocol entry - see server side
       shiny::actionButton(inputId = "create", label = "Batch Import Data", width = "100%")
-    ), ## end of side bar panal
+    ), ## end of side bar panel
    
     ## output area of shiny app - box
     shinydashboard::box(solidHeader = T, width = 8,
@@ -50,19 +57,23 @@ server <- function(input, output) {
     if (input$Protocol != "NULL") {
 
       ## changes input depending on Protocol selected
-      if (input$Protocol == "R6 Rogue River - Tally") {
-        p2 <- c("R6 Rogue River Nested Freq/GC/Line Intercept", "No"="NULL")
+      if (input$Protocol == "USFS R6 Rogue River - Tally") {
+        p2 <- c("USFS R6 Rogue River Standard", "No"="NULL")
         filter_keys <- c("Rogue River-Siskiyou National Forests"="USFS R6-RR")
       }
-      if (input$Protocol == "R6 Rogue River Nested Freq/GC/Line Intercept") {
-        p2 <- c("R6 Rogue River - Tally", "No"="NULL")
+      if (input$Protocol == "USFS R6 Rogue River Standard") {
+        p2 <- c("USFS R6 Rogue River - Tally", "No"="NULL")
         filter_keys <- c("Rogue River-Siskiyou National Forests"="USFS R6-RR")
+      }
+      if (input$Protocol == "USFS R4 BTNF Range Monitoring") {
+        p2 <- c("No"="NULL")
+        filter_keys <- c("Bridger-Teton National Forest"="USFS R4-BT")
       }
       
       ## insert selection for protocol #2
       insertUI(selector = "div:has(> #Protocol)",
                where = "afterEnd",
-               ui = selectInput(inputId = "Protocol_2", label = "2nd Protocol?",
+               ui = selectInput(inputId = "Protocol_2", label = "Select another protocol",
                                 choices = p2,
                                 multiple = F, selected = T))
       
@@ -72,6 +83,10 @@ server <- function(input, output) {
                ui = selectInput(inputId = "ServerKey", label = "Select Organization",
                                 choices = filter_keys,
                                 multiple = F, selected = T))
+      
+      updateSelectInput(inputId = "Protocol", label = paste0(input$Protocol, " selected!"))
+      removeUI("div:has(> #Protocol)")
+      
     }
   })
   ## end of UI drop downs ----

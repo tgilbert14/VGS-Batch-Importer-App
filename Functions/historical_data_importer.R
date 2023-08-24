@@ -9,222 +9,104 @@ library(DBI)
 library(RSQLite)
 library(stringr)
 
-## INSERT DATA FUNCTION --------------------------------------------------------
-## insert statement to add data - nested frequency
-insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", SampleNumber = "NULL", Element = "NULL", SubElement = "NULL", FieldSymbol, SpeciesQualifier = "NULL", FieldQualifier = "NULL", cParameter = "NULL", cParameter2 = "NULL", cParameter3 = "NULL", nValue = "NULL", nValue2 = "NULL", nValue3 = "NULL", cValue = "NULL", cValue2 = "NULL", cValue3 = "NULL", SyncKey, SyncState) {
-  
-  ## testing
-  # FK_Event=checked_PK_Event
-  
-  ## Setting base variables to NULL
-  ## default to "NULL" for most variables - update later
-  # FK_Species="NULL"
-  # Transect="NULL"
-  # SampleNumber="NULL"
-  # Element="NULL"
-  # SubElement="NULL"
-  # ##Field symbol usually the same as FK_Species
-  # #FieldSymbol="NULL"
-  # SpeciesQualifier="NULL"
-  # FieldQualifier="NULL"
-  # cParameter="NULL"
-  # cParameter2="NULL"
-  # cParameter3="NULL"
-  # nValue="NULL"
-  # nValue2="NULL"
-  # nValue3="NULL"
-  # cValue="NULL"
-  # cValue2="NULL"
-  # cValue3="NULL"
-  
-  ## setting sync key/states
-  SyncKey <- 33
-  SyncState <- 1
-  
-  ## get species list from database
-  vgs_species_list_q <- paste0("SELECT PK_Species from Species where List = 'NRCS'")
-  
-  vgs_species_list <- dbGetQuery(mydb, vgs_species_list_q)
-  # View(vgs_species_list)
-  
-  ## If Nested Freq - reset values for insert for that specific method
-  if (method == "NF") {
-    # data<- nest_freq_ready
-    
-    ## sample data is col 5:25 (T1-T20) usually
-    ## last column is a summary column
-    sample_data <- data[5:(ncol(data) - 1)]
-    
-    d <- 1
-    while (d < nrow(data) + 1) {
-      
-      ## alerts for app stoppages ----------------------------------------------
-      ## Species not in VGS .db species list = stop()
-      if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) {
-        shinyalert("Species Not in VGS!", paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect), type = "error")
-        Sys.sleep(15)
-      }
-      if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect))
-      
-      ## Check length of species qualifier = stop() if over 20 char
-      if (nchar(data[d, ][2]) > 20) {
-        shinyalert("Species Qualifier too long!", paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (>20) for belt#", Transect," - ",data_file[batch_file]), type = "error")
-        Sys.sleep(20)
-      }
-      if (nchar(data[d, ][2]) > 20) stop(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char)"))
-      ## end of checks to stop app for nested freq -----------------------------
-      
-      ## for each species - format if Species Qualifier is not null
-      if (data[d, ][2] != "NULL") {
-        ## get rid of problematic symbols
-        data[d, ][2] <- gsub('"', "", data[d, ][2], fixed = T)
-        data[d, ][2] <- gsub("'", "", data[d, ][2], fixed = T)
-        ## add quotes
-        data[d, ][2] <- paste0("'", data[d, ][2], "'")
-      }
-      
-      ## each col / sample (starts at column 5)
-      s <- 1
-      while (s < ncol(sample_data) + 1) {
-        if (!is.na(sample_data[d, s])) {
-          PK_Sample <- GUID()
-          
-          insert_sample <- paste0("INSERT INTO Sample
-           (PK_Sample
-           ,FK_Event
-           ,FK_Species
-           ,Transect
-           ,SampleNumber
-           ,Element
-           ,SubElement
-           ,FieldSymbol
-           ,SpeciesQualifier
-           ,FieldQualifier
-           ,cParameter
-           ,cParameter2
-           ,cParameter3
-           ,nValue
-           ,nValue2
-           ,nValue3
-           ,cValue
-           ,cValue2
-           ,cValue3
-           ,SyncKey
-           ,SyncState)
-     VALUES
-           (", PK_Sample, ",", FK_Event, ",'", toupper(data[d, ][[1]]), "',", Transect, ",", s, ",", as.numeric(sample_data[d, s]), ",", SubElement, ",'", toupper(data[d, ][[1]]), "',", data[d, ][2], ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
-          
-          ## insert NF data
-          dbExecute(mydb, insert_sample)
-        }
-        ## move to next sample
-        s <- s + 1
-      }
-      
-      ## move to next row/species
-      d <- d + 1
-    }
-    
-    ## need to mark SYS_NONE if nothing in frame but did it ->
-    ## after all species inserted - go back and check for sys_nones
-    s <- 1
-    while (s < ncol(sample_data) + 1) {
-      ## check if data
-      is_there_data <- !is.na(sample_data[s])
-      ## if at least one true -> don't add anything
-      sys_none_check <- grep("TRUE", is_there_data)
-      ## if = 0 -> add SYS_NONE to sample# s
-      if (length(sys_none_check) == 0) {
-        PK_Sample <- GUID()
-        
-        insert_sample <- paste0("INSERT INTO Sample
-           (PK_Sample
-           ,FK_Event
-           ,FK_Species
-           ,Transect
-           ,SampleNumber
-           ,Element
-           ,SubElement
-           ,FieldSymbol
-           ,SpeciesQualifier
-           ,FieldQualifier
-           ,cParameter
-           ,cParameter2
-           ,cParameter3
-           ,nValue
-           ,nValue2
-           ,nValue3
-           ,cValue
-           ,cValue2
-           ,cValue3
-           ,SyncKey
-           ,SyncState)
-     VALUES
-           (", PK_Sample, ",", FK_Event, ",'SYS_NONE',", Transect, ",", s, ",1,", SubElement, ",'SYS_NONE',NULL,", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
-        
-        ## insert NF data
-        dbExecute(mydb, insert_sample)
-      }
-      s <- s + 1
-    }
-    print("Nested Freq inserted...")
-  }
-  
-  ## If Ground Cover - reset values for insert for that specific method
-  if (method == "GC") {
-    # data<- gc_ready
-    ## setting variables for tally insert
-    Transect <- 1
-    SampleNumber <- 1
-    Element <- 0
-    ## Update categories to PK_Species/Fk_Species/Field Symbol
-    data$...4[data$...4 == "Litter"] <- "G_LITT"
-    data$...4[data$...4 == "Rock"] <- "G_ROCK3"
-    data$...4[data$...4 == "Vegetation"] <- "G_VEGE"
-    data$...4[data$...4 == "Pavement"] <- "G_$QGJSWR6KN5"
-    data$...4[data$...4 == "Moss"] <- "G_MOSS"
-    data$...4[data$...4 == "Soil"] <- "G_$YKLSYQARFV"
-    
-    d <- 1
-    while (d < nrow(data) + 1) {
-      PK_Sample <- GUID()
-      
-      insert_sample <- paste0("INSERT INTO Sample
-           (PK_Sample
-           ,FK_Event
-           ,FK_Species
-           ,Transect
-           ,SampleNumber
-           ,Element
-           ,SubElement
-           ,FieldSymbol
-           ,SpeciesQualifier
-           ,FieldQualifier
-           ,cParameter
-           ,cParameter2
-           ,cParameter3
-           ,nValue
-           ,nValue2
-           ,nValue3
-           ,cValue
-           ,cValue2
-           ,cValue3
-           ,SyncKey
-           ,SyncState)
-     VALUES
-           (", PK_Sample, ",", FK_Event, ",'", data[d, ][[1]], "',", Transect, ",", SampleNumber, ",", Element, ",", SubElement, ",'", data[d, ][[1]], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",", data[d, ][[2]], ",", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
-      
-      ## insert GC data
-      dbExecute(mydb, insert_sample)
-      d <- d + 1
-    }
-    
-    print("GC inserted...")
-  }
-}
-## end of insert data function -------------------------------------------------
 
+## [[ 1st function ]]
+## READ IMPORT DATA FUNCTION ---------------------------------------------------
+## >This function reads in all excel tabs and saves them, sends them to next
+##  function(s) for import data process. Primarily gets raw data and passes it
+##  on to functions over and over until all data selected is imported...
+read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
+  db_loc <- "C:/ProgramData/VGSData/VGS50.db"
+  mydb <- dbConnect(RSQLite::SQLite(), dbname = db_loc)
+  ## Save to parent environment for later
+  ServerKey <<- ServerKey
+  Protocol <<- Protocol
+  Protocol_2 <<- Protocol_2
+  output_list<<- data.frame(FileNumber=numeric(),CompletedFileList=character())
+  
+  ## choosing file to import
+  data_file <<- choose.files("Choose Historical Data to import (excel)")
+  the_void <- character(0)
+  
+  if (identical(data_file, the_void)) {
+    ## alert for data import start ->
+    shinyalert("No Data Selected", "Refresh the page and choose a file!",
+               imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
+               imageWidth = 100, imageHeight = 100, type = "error", 
+               timer = 2500)
+    Sys.sleep(5)
+    if (identical(data_file, the_void)) stop(paste0("No Data Selected - Choose a file!"))
+  }
+  
+  ## alert for data import start ->
+  shinyalert("...is crunching your data now", "YUM! Please wait for next update.",
+             imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
+             imageWidth = 100, imageHeight = 100, type = "success", 
+             timer = 2500)
+  
+  ## reading in sheets to list
+  historical_data <<- list()
+  ## go through each batch file
+  batch_file <<- 1
+  while (batch_file < length(data_file) + 1) {
+    print(" ")
+    #cat("----->")
+    
+    print(paste0("Moving to File ", batch_file, " : ", data_file[batch_file]))
+    
+    shinyalert(paste0("Starting File #", batch_file), paste0(data_file[batch_file]),
+               type = "success", timer = 2000, showConfirmButton = F)
+    
+    ## read specific batch file
+    active_sheets <- excel_sheets(data_file[batch_file])
+    ## don't care about VGS species list tab / ref sheets
+    active_sheets <- active_sheets[active_sheets != "VGSDefaultSpeciesList"]
+    active_sheets <- active_sheets[active_sheets != "Species Richness"]
+    
+    # Loop through each sheet and read the data into a data frame
+    for (sheet_name in active_sheets) {
+      suppressMessages(historical_data[[sheet_name]] <- read_excel(data_file[batch_file], sheet = sheet_name, col_names = F, trim_ws = T))
+      print(paste0("Saving ", sheet_name))
+    }
+    active_sheets <<- active_sheets
+    ## go through each sheet 'x'
+    x <<- 1
+    while (x < length(historical_data) + 1) {
+      ## get all info from each excel sheet -> Reading one sheet at a time
+      data_import <<- historical_data[[x]]
+      # View(data_import)
+      
+      ## function for key info and data import
+      batch_import(data_import)
+      ## move site to correct folder or create parent folders
+      # create_schema()
+    }
+    
+    ## saving completed files for output
+    output_list[batch_file,1]<<- batch_file
+    output_list[batch_file,2]<<- data_file[[batch_file]]
+    
+    ## move to next batch file
+    batch_file <<- batch_file + 1
+    
+    
+    if (batch_file == length(data_file) + 1) {
+      print("**Batch Import Complete**")
+    }
+  }
+  DBI::dbDisconnect(mydb)
+  closeAllConnections()
+}
+## end of read import data function --------------------------------------------
+
+
+## [[ 2nd function ]]
 ## BATCH IMPORT DATA FUNCTION --------------------------------------------------
+## >This function reads the saved excel sheets and parses data depending on tab
+##  name or tab info. Parses data differently depending on ServerKey/organization.
+##  Sends parsed data to create site function if relevant, otherwise sources to
+##  other files (scrips folder) that parse data and sends to relevant insert 
+##  data function based on ServerKey/organization.
 batch_import <<- function(historical_raw_data) {
   ## testing
   # historical_raw_data<- data_import
@@ -243,76 +125,20 @@ batch_import <<- function(historical_raw_data) {
     print(paste0("Found SiteData info for file ", batch_file, " -> ", active_sheets[x]))
     print(paste0("Identifying keys for ", active_sheets[x]))
     
-    ## SITE TABLE -->
-    {
-      # site_name <- historical_raw_data[grep("key", historical_raw_data[[1]], ignore.case = TRUE),][[2]]
-      site_name <<- historical_raw_data[grep("siteID", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
-      event_date <<- historical_raw_data[grep("date", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
-      event_date <<- as.Date(as.numeric(event_date), origin = "1899-12-30")
-      event_date <<- format(event_date, "%Y-%m-%d")
-      event_date <<- paste0(event_date, " 00:00:00")
-      ## spelling error for key below -->
-      elevation <<- historical_raw_data[grep("elevat", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
-      # elevation <- historical_raw_data[grep("elevation", historical_raw_data[[1]], ignore.case = TRUE),][[2]]
-      slope <<- historical_raw_data[grep("slope", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
-      aspect <<- historical_raw_data[grep("aspect", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
-      # site_notes_1 <- historical_raw_data[grep("general", historical_raw_data[[1]], ignore.case = TRUE),][[2]]
-      site_notes_1 <- historical_raw_data[grep("site notes", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
-      site_notes_1 <- gsub('"', "", site_notes_1, fixed = T)
-      site_notes_1 <- gsub("'", "", site_notes_1, fixed = T)
-      # site_notes_2 <- historical_raw_data[grep("mlra", historical_raw_data[[1]], ignore.case = TRUE),][[2]]
-      site_notes_2 <- historical_raw_data[grep("event note", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
-      site_notes_2 <- gsub('"', "", site_notes_2, fixed = T)
-      site_notes_2 <- gsub("'", "", site_notes_2, fixed = T)
-    }
+    View(data_import)
     
-    ## Section if 2 sections of site notes / MLRA notes
-    ## NRCS AZ has this
-    if (ServerKey == "NRCS AZ") {
-      ## Formatting notes ---- change depending on batch data
-      ## if only site_notes_1
-      if (length(site_notes_1) > 0 && length(site_notes_2) == 0) {
-        site_notes <<- site_notes_1
-      }
-      ## if only site_notes_2
-      if (length(site_notes_1) == 0 && length(site_notes_2) > 0) {
-        site_notes <<- site_notes_2
-      }
-      ## if both have notes
-      if (length(site_notes_1) > 0 && length(site_notes_2) > 0) {
-        site_notes <<- paste0(site_notes, " - ", site_notes_2)
-      }
-      ## if both NA -> no notes
-      if (length(site_notes_1) == 0 && length(site_notes_2) == 0) {
-        site_notes <<- "NULL"
-      }
-      ## set EventNotes to NULL
-      EventNotes <<- "NULL"
-      ## End of formatting notes if 2 sections of site notes / MLRA notes --------
-    }
-    
-    ## Section if notes separate - site and event notes
-    ## NRCS AZ has this
+    ## finding meta data ->
     if (ServerKey == "USFS R6-RR") {
-      ## Formatting notes ---- change depending on batch data
-      ## if site_notes_1 present
-      if (length(site_notes_1) > 0 && !is.na(site_notes_1)) {
-        site_notes <<- site_notes_1
-      }
-      if (length(site_notes_1) == 0 || is.na(site_notes_1)) {
-        site_notes <<- "NULL"
-      }
-      ## event notes
-      if (length(site_notes_2) > 0 && !is.na(site_notes_2)) {
-        EventNotes <<- site_notes_2
-      }
-      if (length(site_notes_2) == 0 || is.na(site_notes_2)) {
-        EventNotes <<- "NULL"
-      }
-      ## End of formatting notes
+      source("scripts/USFS R6/R6_RR_site_info.R")
+    }
+    if (ServerKey == "USFS R4-BT") {
+      source("scripts/USFS R6/R4_BT_site_info.R")
+    }
+    if (ServerKey == "NRCS AZ") {
+      source("scripts/NRCS AZ/NRCS_AZ_site_info.R")
     }
     
-    ## variable manipulation -----------------------------------------------------
+    ## variable manipulation ---->
     ## making all values NULL if NA
     if (is.na(aspect) || length(aspect) == 0) {
       aspect <- "NULL"
@@ -323,22 +149,15 @@ batch_import <<- function(historical_raw_data) {
     if (is.na(elevation) || length(elevation) == 0) {
       elevation <- "NULL"
     }
-    ## End of variable manipulation ----
-    
-    ## LOCATOR TABLE -->
-    lat <- historical_raw_data[grep("latitude", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
-    long <- historical_raw_data[grep("longitude", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
-    
     ## if lat or long missing -> set to "NULL"
     if (is.na(lat) || is.na(long)) {
       lat <- "NULL"
       long <- "NULL"
     }
+    ## End of variable manipulation
     
     print(paste0("Inserting ", active_sheets[x]))
     
-    ## set protocol first
-    # ProtocolName = "R6 Rogue River Nested Freq/GC/Line Intercept"
     ## create site and data event
     create_site(
       ProtocolName = Protocol, ProtocolName_2 = Protocol_2, SiteID = site_name,
@@ -386,20 +205,19 @@ batch_import <<- function(historical_raw_data) {
     
     ## RR key - nested freq - check protocols as well
     if (ServerKey == "USFS R6-RR" && 
-        (Protocol == "R6 Rogue River Nested Freq/GC/Line Intercept" || Protocol_2 == "R6 Rogue River Nested Freq/GC/Line Intercept")) {
-      base::source("scripts/R6_RR.R")
+        (Protocol == "USFS R6 Rogue River Standard" || Protocol_2 == "USFS R6 Rogue River Standard")) {
+      ## inserting freq data
+      base::source("scripts/USFS R6/R6_RR_freq.R")
     }
-    
-    ## BTNF key - nested freq
+    ## BTNF key
     if (ServerKey == "USFS R4-BT") {
       ## not done yet...
-      base::source("R4_BT.R")
+      base::source("scripts/USFS R4/R4_BT.R")
     }
-    
     ## NRCS AZ
     if (ServerKey == "NRCS AZ") {
       ## not done yet...
-      base::source("NRCS_AZ.R")
+      base::source("scripts/NRCS AZ/NRCS_AZ.R")
     }
     
   }
@@ -408,6 +226,8 @@ batch_import <<- function(historical_raw_data) {
 }
 ## end of batch import data function -------------------------------------------
 
+
+## [[ 3rd function ]]
 ## CREATE SITE FUNCTION --------------------------------------------------------
 create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date, EventNotes = "NULL", DDLat = "NULL", DDLong = "NULL", IsPrimary = 1, Slope = "NULL", Aspect = "NULL", Elevation = "NULL", DateEstablished = "NULL", SyncKey = 33, SyncState = 1, FK_Species_Site = "'SITE_KEY'", FK_Species_SiteStatus = "'SST_ACTIVE'", FK_Species_ElevUnits = "'UNIT_FEET'", FK_Species_Locator = "'LOC_MARKER'", LocatorID = "NULL", L_Description = "NULL", L_Date = "NULL", LocatorElevation = "NULL", L_SyncKey = 33, L_SyncState = 0, DateEnd = "NULL", Bailiwick = "NULL", FK_SiteClass = "NULL") {
   
@@ -449,7 +269,6 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   if (DateEstablished != "NULL" || is.na(DateEstablished) || length(DateEstablished) == 0) {
     DateEstablished <- paste0("'", DateEstablished, "'")
   }
-  
   
   ## Guid for site pk
   PK_Site <- GUID()
@@ -999,143 +818,236 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   ## this section takes place only if 1st tab/page of xlsx or labeled as
   ## site meta data
   
-  ## Start of data inserting ---------------------------------------------------
-  ## specific to R6 RR
+  ## Start of data inserting after protocols created -> gc data on site meta
+  ## data page
+  ## specific to R6 RR on first page ->
   if (ServerKey == "USFS R6-RR") {
-    
-    ## Set FK_Event - Query .db for correct PK_Event ->
-    ## works...
-    find_event_guid <- paste0("Select DISTINCT quote(PK_Event), ProtocolName from Protocol
-    INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
-    INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
-    INNER JOIN Site ON Site.PK_Site = Event.FK_Site
-    where ProtocolName LIKE'%Tally%' AND Protocol.Date = '", Event_Date, "' AND
-    Protocol.SyncKey = ", SyncKey, " AND SiteID = '", SiteID, "'", "
-    AND EventName = 'Point Ground Cover (by tally)'")
-    
-    Event_guid_info <- DBI::dbGetQuery(mydb, find_event_guid)
-    checked_PK_Event <- Event_guid_info$`quote(PK_Event)`[1]
-    
-    ## GC tally data - done on meta-data page
-    print(paste0("Parsing Data for GC Tally Data..."))
-    
-    ## saving gc data only with no column titles - RR specific
-    gc_data <- data_import[c(4:9), c(4:5)]
-    ## get rid of NA columns with no species listed
-    gc_data <- gc_data %>%
-      filter(!is.na(gc_data[2]))
-    
-    ## if no gc data
-    if (nrow(gc_data) == 0) {
-      print(paste0("No GC data for file ", batch_file))
-      ## update event notes to remark no gc data for this event
-      update_event_notes <- paste0("Update Protocol
-               Set Notes = 'No Ground Cover data for this event'
-               Where PK_Protocol=", checked_PK_Event)
-      dbExecute(mydb, update_event_notes)
-    }
-    
-    ## only insert if data present
-    if (nrow(gc_data) > 0) {
-      ## save as data frame
-      gc_data <- as.data.frame(gc_data)
-      ## change NA's to 0
-      gc_data[is.na(gc_data)] <- 0
-      ## get rid of rows if have a species but has no hits (sum of zero for freq)
-      gc_ready <- gc_data %>% filter(gc_data$...5 != 0)
-      # View(gc_ready)
-      
-      ## insert gc data
-      insert_data(data = gc_ready, method = "GC", FK_Event = checked_PK_Event)
-    }
+    ## GC insert for RR
+    source("scripts/USFS R6/R6_RR_gc.R")
   }
-  ## End of GC insert
+  
 }
 ## end of create site function -------------------------------------------------
 
-## READ IMPORT DATA FUNCTION ---------------------------------------------------
-read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
-  db_loc <- "C:/ProgramData/VGSData/VGS50.db"
-  mydb <- dbConnect(RSQLite::SQLite(), dbname = db_loc)
-  ## Save to parent environment for later
-  ServerKey <<- ServerKey
-  Protocol <<- Protocol
-  Protocol_2 <<- Protocol_2
-  output_list<<- data.frame(FileNumber=numeric(),CompletedFileList=character())
-  
-  ## choosing file to import
-  data_file <<- choose.files("Choose Historical Data to import (excel)")
-  the_void <- character(0)
 
-  if (identical(data_file, the_void)) {
-    ## alert for data import start ->
-    shinyalert("No Data Selected", "Refresh the page and choose a file!",
-               imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
-               imageWidth = 100, imageHeight = 100, type = "error", 
-               timer = 2500)
-    Sys.sleep(5)
-    if (identical(data_file, the_void)) stop(paste0("No Data Selected - Choose a file!"))
-  }
-
-  ## alert for data import start ->
-  shinyalert("...is crunching your data now", "YUM! Please wait for next update.",
-             imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
-             imageWidth = 100, imageHeight = 100, type = "success", 
-             timer = 2500)
+## [[ 4th function ]]
+## INSERT DATA FUNCTION --------------------------------------------------------
+## insert statement to add data - nested frequency
+insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", SampleNumber = "NULL", Element = "NULL", SubElement = "NULL", FieldSymbol, SpeciesQualifier = "NULL", FieldQualifier = "NULL", cParameter = "NULL", cParameter2 = "NULL", cParameter3 = "NULL", nValue = "NULL", nValue2 = "NULL", nValue3 = "NULL", cValue = "NULL", cValue2 = "NULL", cValue3 = "NULL", SyncKey, SyncState) {
   
-  ## reading in sheets to list
-  historical_data <<- list()
-  ## go through each batch file
-  batch_file <<- 1
-  while (batch_file < length(data_file) + 1) {
-    print(" ")
-    #cat("----->")
+  ## testing
+  # FK_Event=checked_PK_Event
+  
+  ## Setting base variables to NULL
+  ## default to "NULL" for most variables - update later
+  # FK_Species="NULL"
+  # Transect="NULL"
+  # SampleNumber="NULL"
+  # Element="NULL"
+  # SubElement="NULL"
+  # ##Field symbol usually the same as FK_Species
+  # #FieldSymbol="NULL"
+  # SpeciesQualifier="NULL"
+  # FieldQualifier="NULL"
+  # cParameter="NULL"
+  # cParameter2="NULL"
+  # cParameter3="NULL"
+  # nValue="NULL"
+  # nValue2="NULL"
+  # nValue3="NULL"
+  # cValue="NULL"
+  # cValue2="NULL"
+  # cValue3="NULL"
+  
+  ## setting sync key/states
+  SyncKey <- 33
+  SyncState <- 1
+  
+  ## get species list from database
+  vgs_species_list_q <- paste0("SELECT PK_Species from Species where List = 'NRCS'")
+  
+  vgs_species_list <- dbGetQuery(mydb, vgs_species_list_q)
+  # View(vgs_species_list)
+  
+  ## If Nested Freq - reset values for insert for that specific method
+  if (method == "NF") {
+    # data<- nest_freq_ready
     
-    print(paste0("Moving to File ", batch_file, " : ", data_file[batch_file]))
+    ## sample data is col 5:25 (T1-T20) usually
+    ## last column is a summary column
+    sample_data <- data[5:(ncol(data) - 1)]
     
-    shinyalert(paste0("Starting File #", batch_file), paste0(data_file[batch_file]),
-               type = "success", timer = 2000, showConfirmButton = F)
-    
-    
-    ## read specific batch file
-    active_sheets <- excel_sheets(data_file[batch_file])
-    ## don't care about VGS species list tab
-    active_sheets <- active_sheets[active_sheets != "VGSDefaultSpeciesList"]
-    # Loop through each sheet and read the data into a data frame
-    for (sheet_name in active_sheets) {
-      suppressMessages(historical_data[[sheet_name]] <- read_excel(data_file[batch_file], sheet = sheet_name, col_names = F, trim_ws = T))
-      print(paste0("Saving ", sheet_name))
-    }
-    active_sheets <<- active_sheets
-    ## go through each sheet 'x'
-    x <<- 1
-    while (x < length(historical_data) + 1) {
-      ## get all info from each excel sheet -> Reading one sheet at a time
-      data_import <<- historical_data[[x]]
-      # View(data_import)
+    d <- 1
+    while (d < nrow(data) + 1) {
       
-      ## function for key info and data import
-      batch_import(data_import)
-      ## move site to correct folder or create parent folders
-      # create_schema()
+      ## alerts for app stoppages ----------------------------------------------
+      ## Species not in VGS .db species list = stop()
+      if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) {
+        shinyalert("Species Not in VGS!", paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect), type = "error")
+        Sys.sleep(15)
+      }
+      if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect))
+      
+      ## Check length of species qualifier = stop() if over 20 char
+      if (nchar(data[d, ][2]) > 20) {
+        shinyalert("Species Qualifier too long!", paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (>20) for belt#", Transect," - ",data_file[batch_file]), type = "error")
+        Sys.sleep(20)
+      }
+      if (nchar(data[d, ][2]) > 20) stop(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char)"))
+      ## end of checks to stop app for nested freq -----------------------------
+      
+      ## for each species - format if Species Qualifier is not null
+      if (data[d, ][2] != "NULL") {
+        ## get rid of problematic symbols
+        data[d, ][2] <- gsub('"', "", data[d, ][2], fixed = T)
+        data[d, ][2] <- gsub("'", "", data[d, ][2], fixed = T)
+        ## add quotes
+        data[d, ][2] <- paste0("'", data[d, ][2], "'")
+      }
+      
+      ## each col / sample (starts at column 5)
+      s <- 1
+      while (s < ncol(sample_data) + 1) {
+        if (!is.na(sample_data[d, s])) {
+          PK_Sample <- GUID()
+          
+          insert_sample <- paste0("INSERT INTO Sample
+           (PK_Sample
+           ,FK_Event
+           ,FK_Species
+           ,Transect
+           ,SampleNumber
+           ,Element
+           ,SubElement
+           ,FieldSymbol
+           ,SpeciesQualifier
+           ,FieldQualifier
+           ,cParameter
+           ,cParameter2
+           ,cParameter3
+           ,nValue
+           ,nValue2
+           ,nValue3
+           ,cValue
+           ,cValue2
+           ,cValue3
+           ,SyncKey
+           ,SyncState)
+     VALUES
+           (", PK_Sample, ",", FK_Event, ",'", toupper(data[d, ][[1]]), "',", Transect, ",", s, ",", as.numeric(sample_data[d, s]), ",", SubElement, ",'", toupper(data[d, ][[1]]), "',", data[d, ][2], ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
+          
+          ## insert NF data
+          dbExecute(mydb, insert_sample)
+        }
+        ## move to next sample
+        s <- s + 1
+      }
+      
+      ## move to next row/species
+      d <- d + 1
     }
     
-    ## saving completed files for output
-    output_list[batch_file,1]<<- batch_file
-    output_list[batch_file,2]<<- data_file[[batch_file]]
-    
-    ## move to next batch file
-    batch_file <<- batch_file + 1
-
-    
-    if (batch_file == length(data_file) + 1) {
-      print("**Batch Import Complete**")
+    ## need to mark SYS_NONE if nothing in frame but did it ->
+    ## after all species inserted - go back and check for sys_nones
+    s <- 1
+    while (s < ncol(sample_data) + 1) {
+      ## check if data
+      is_there_data <- !is.na(sample_data[s])
+      ## if at least one true -> don't add anything
+      sys_none_check <- grep("TRUE", is_there_data)
+      ## if = 0 -> add SYS_NONE to sample# s
+      if (length(sys_none_check) == 0) {
+        PK_Sample <- GUID()
+        
+        insert_sample <- paste0("INSERT INTO Sample
+           (PK_Sample
+           ,FK_Event
+           ,FK_Species
+           ,Transect
+           ,SampleNumber
+           ,Element
+           ,SubElement
+           ,FieldSymbol
+           ,SpeciesQualifier
+           ,FieldQualifier
+           ,cParameter
+           ,cParameter2
+           ,cParameter3
+           ,nValue
+           ,nValue2
+           ,nValue3
+           ,cValue
+           ,cValue2
+           ,cValue3
+           ,SyncKey
+           ,SyncState)
+     VALUES
+           (", PK_Sample, ",", FK_Event, ",'SYS_NONE',", Transect, ",", s, ",1,", SubElement, ",'SYS_NONE',NULL,", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
+        
+        ## insert NF data
+        dbExecute(mydb, insert_sample)
+      }
+      s <- s + 1
     }
+    print("Nested Freq inserted...")
   }
-  DBI::dbDisconnect(mydb)
-  closeAllConnections()
+  
+  ## If Ground Cover - reset values for insert for that specific method
+  if (method == "GC") {
+    # data<- gc_ready
+    ## setting variables for tally insert
+    Transect <- 1
+    SampleNumber <- 1
+    Element <- 0
+    ## Update categories to PK_Species/Fk_Species/Field Symbol
+    data$...4[data$...4 == "Litter"] <- "G_LITT"
+    data$...4[data$...4 == "Rock"] <- "G_ROCK3"
+    data$...4[data$...4 == "Vegetation"] <- "G_VEGE"
+    data$...4[data$...4 == "Pavement"] <- "G_$QGJSWR6KN5"
+    data$...4[data$...4 == "Moss"] <- "G_MOSS"
+    data$...4[data$...4 == "Soil"] <- "G_$YKLSYQARFV"
+    
+    d <- 1
+    while (d < nrow(data) + 1) {
+      PK_Sample <- GUID()
+      
+      insert_sample <- paste0("INSERT INTO Sample
+           (PK_Sample
+           ,FK_Event
+           ,FK_Species
+           ,Transect
+           ,SampleNumber
+           ,Element
+           ,SubElement
+           ,FieldSymbol
+           ,SpeciesQualifier
+           ,FieldQualifier
+           ,cParameter
+           ,cParameter2
+           ,cParameter3
+           ,nValue
+           ,nValue2
+           ,nValue3
+           ,cValue
+           ,cValue2
+           ,cValue3
+           ,SyncKey
+           ,SyncState)
+     VALUES
+           (", PK_Sample, ",", FK_Event, ",'", data[d, ][[1]], "',", Transect, ",", SampleNumber, ",", Element, ",", SubElement, ",'", data[d, ][[1]], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",", data[d, ][[2]], ",", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
+      
+      ## insert GC data
+      dbExecute(mydb, insert_sample)
+      d <- d + 1
+    }
+    
+    print("GC inserted...")
+  }
 }
-## end of read import data function --------------------------------------------
+## end of insert data function -------------------------------------------------
+
+
+
 
 
 ## in progress...
