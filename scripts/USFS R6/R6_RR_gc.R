@@ -9,8 +9,8 @@ find_event_guid <- paste0("Select DISTINCT quote(PK_Event), ProtocolName from Pr
     INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
     INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
     INNER JOIN Site ON Site.PK_Site = Event.FK_Site
-    where ProtocolName LIKE'%",term,"%' AND Protocol.Date = '", Event_Date, "' AND
-    Protocol.SyncKey = ", SyncKey, " AND SiteID = '", SiteID, "'", "
+    where ProtocolName LIKE'%",term,"%' AND Protocol.Date = '",event_date, "'
+    AND SiteID = '", site_name, "'", "
     AND EventName = 'Point Ground Cover (by tally)'")
 
 Event_guid_info <- DBI::dbGetQuery(mydb, find_event_guid)
@@ -46,5 +46,5 @@ if (nrow(gc_data) > 0) {
   # View(gc_ready)
   
   ## insert gc data
-  insert_data(data = gc_ready, method = "GC", FK_Event = checked_PK_Event)
+  insert_data(data = gc_ready, method = "GC", FK_Event = checked_PK_Event, SyncKey = 33, SyncState = 1)
 }

@@ -5,8 +5,13 @@ library(shinycssloaders)
 library(shinydashboard)
 library(shinyalert)
 library(DT)
-#library(shinyWidgets)
-## end of global
+
+## testing variables to stop app
+test_mode=FALSE
+#test_mode="base" ## stops for site meta_data
+#test_mode="data_page1" ## stops before data insert section
+#test_mode="wildcard"
+
 
 ## -----------------------------------------------------------------------------
 ## Define UI 

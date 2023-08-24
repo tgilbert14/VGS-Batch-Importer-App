@@ -77,7 +77,7 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
       # View(data_import)
       
       ## function for key info and data import
-      batch_import(data_import)
+      batch_import(historical_raw_data = data_import)
       ## move site to correct folder or create parent folders
       # create_schema()
     }
@@ -108,10 +108,9 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
 ##  other files (scrips folder) that parse data and sends to relevant insert 
 ##  data function based on ServerKey/organization.
 batch_import <<- function(historical_raw_data) {
-  ## testing
-  # historical_raw_data<- data_import
-  # View(historical_raw_data)
-  
+  ## saving globally
+  historical_raw_data<<- historical_raw_data
+
   ## SET KEY DATA --------------------------------------------------------------
   ## Site MetaData by ROW
   
@@ -125,7 +124,8 @@ batch_import <<- function(historical_raw_data) {
     print(paste0("Found SiteData info for file ", batch_file, " -> ", active_sheets[x]))
     print(paste0("Identifying keys for ", active_sheets[x]))
     
-    View(data_import)
+    if (test_mode == "base") stop("stop here to check out raw data form")
+    # View(data_import)
     
     ## finding meta data ->
     if (ServerKey == "USFS R6-RR") {
@@ -231,6 +231,9 @@ batch_import <<- function(historical_raw_data) {
 ## CREATE SITE FUNCTION --------------------------------------------------------
 create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date, EventNotes = "NULL", DDLat = "NULL", DDLong = "NULL", IsPrimary = 1, Slope = "NULL", Aspect = "NULL", Elevation = "NULL", DateEstablished = "NULL", SyncKey = 33, SyncState = 1, FK_Species_Site = "'SITE_KEY'", FK_Species_SiteStatus = "'SST_ACTIVE'", FK_Species_ElevUnits = "'UNIT_FEET'", FK_Species_Locator = "'LOC_MARKER'", LocatorID = "NULL", L_Description = "NULL", L_Date = "NULL", LocatorElevation = "NULL", L_SyncKey = 33, L_SyncState = 0, DateEnd = "NULL", Bailiwick = "NULL", FK_SiteClass = "NULL") {
   
+  # SyncKey <<- 33
+  # SyncState <<- 1
+  
   # ## For testing ----
   # ProtocolName = Protocol
   # ProtocolName_2 = Protocol_2
@@ -266,14 +269,15 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   if (site_notes != "NULL" || is.na(site_notes) || length(site_notes) == 0) {
     site_notes <- paste0("'", site_notes, "'")
   }
-  if (DateEstablished != "NULL" || is.na(DateEstablished) || length(DateEstablished) == 0) {
-    DateEstablished <- paste0("'", DateEstablished, "'")
-  }
+  
+  # if (DateEstablished != "NULL" || is.na(DateEstablished) || length(DateEstablished) == 0) {
+  #   DateEstablished <- paste0("'", DateEstablished, "'")
+  # }
   
   ## Guid for site pk
   PK_Site <- GUID()
   ## insert site sql statement
-  insert_site <- paste0("INSERT INTO Site
+  insert_site <<- paste0("INSERT INTO Site
            (PK_Site
            ,FK_Species_Site
            ,FK_Species_SiteStatus
@@ -300,11 +304,12 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
             ", SyncKey, ",
             ", SyncState, ")")
   
+
   ## insert site into site table - in unassigned bin
   dbExecute(mydb, insert_site)
   
   ## update messages for function
-  print(paste0("Site created -> ", SiteID))
+  print(paste0("Site created -> ", site_name))
   
   ## Adding locator is exists - both not NULL
   if (DDLat != "NULL" && DDLong != "NULL") {
@@ -344,7 +349,7 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
     dbExecute(mydb, insert_loc)
     
     ## update messages for function
-    print(paste0("Locator created -> ", SiteID))
+    print(paste0("Locator created -> ", site_name))
   }
   ## End of Locator ------------------------------------------------------------
   
@@ -818,6 +823,8 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   ## this section takes place only if 1st tab/page of xlsx or labeled as
   ## site meta data
   
+  if (test_mode == "data_page1") stop("stop here to check out raw data form")
+  
   ## Start of data inserting after protocols created -> gc data on site meta
   ## data page
   ## specific to R6 RR on first page ->
@@ -860,8 +867,8 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
   # cValue3="NULL"
   
   ## setting sync key/states
-  SyncKey <- 33
-  SyncState <- 1
+  # SyncKey <- 33
+  # SyncState <- 1
   
   ## get species list from database
   vgs_species_list_q <- paste0("SELECT PK_Species from Species where List = 'NRCS'")

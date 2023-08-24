@@ -35,7 +35,7 @@ if (nrow(nf_data) > 0) {
 INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
 INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
 INNER JOIN Site ON Site.PK_Site = Event.FK_Site
-where ProtocolName LIKE '%",term,"%' AND Protocol.Date = '", event_date, "'
+where ProtocolName LIKE '%",term,"%' AND Protocol.Date = '",event_date, "'
 AND SiteID = '", site_name, "'", " AND
 EventName = 'Frequency (by quadrat)'")
   
@@ -45,5 +45,5 @@ EventName = 'Frequency (by quadrat)'")
   # stop("stop here")
   
   ## insert nested freq data
-  insert_data(data = nest_freq_ready, method = "NF", FK_Event = checked_PK_Event, Transect = belt_num)
+  insert_data(data = nest_freq_ready, method = "NF", FK_Event = checked_PK_Event, Transect = belt_num, SyncKey = 33, SyncState = 1)
 }
