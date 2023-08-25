@@ -52,32 +52,56 @@ Hex <- function(vgs5_guid) {
 ## multiple=T -> should fuction return multiple values if present or select 1st value
 ## location refers to selecting values location in reference to label
 ## location -> ('below','above','right','left)
-find_label <<- function(data, search_term, multiple=TRUE, location="right") {
-  i=1 ## initial column search and variable (i+1 to get column to right of label)
-  found_data <<- data[which(data[[i]] == search_term),i+1]
+find_label <- function(data, search_term, location, multiple=TRUE) {
+  location <- tolower(location) ## formatting location selection - lower case
+  i=1 ## initial column search and variable
+  ## to check if label is in first row
+  term_here <- data[which(data[i] == search_term),i]
+  ## only for 1st column
+  if (location == "right") {
+    found_data <- data[which(data[i] == search_term),i+1]
+  }
+  if (location == "left" && nrow(term_here) != 0) {
+    stop(paste0(search_term, " was found in the first column, there is nothing to the left of it!"))
+  }
+  if (location == "below" || location == "down") {
+    found_data <- data[which(data[i] == search_term)+1,i]
+  }
+  if (location == "above" || location == "up") {
+    found_data <- data[which(data[i] == search_term)-1,i]
+  }
   ## can only do this for how many columns are in data sheet/dataframe
-  while ( (i < ncol(data)) && (nrow(found_data) == 0) ) {
+  ## do for every row but last row
+  while ( (i < ncol(data)+1) && (nrow(found_data) == 0) ) {
     ## if search term for data not found, check next column ->
     if (nrow(found_data) == 0) {
       ## i+1 for search term because data is alreay at coulumn '+1' (right)
-      if (location == "right") {
-        found_data <<- data[which(data[i+1] == search_term),i+2]
+      if (location == "right" && (i < ncol(data)-1)) {
+        found_data <- data[which(data[i+1] == search_term),i+2]
+      }
+      if (location == "right" && (i == ncol(data))) {
+        stop(paste0(search_term, " was found in the last column, there is nothing to the right of it!"))
       }
       if (location == "left") {
-        found_data <<- data[which(data[i+1] == search_term),i]
+        found_data <- data[which(data[i+1] == search_term),i]
       }
-      if (location == "below") {
-        found_data <<- data[which(data[i+1] == search_term)+1,i+1]
+      if (location == "below" || location == "down") {
+        found_data <- data[which(data[i+1] == search_term)+1,i+1]
       }
-      if (location == "above") {
-        found_data <<- data[which(data[i+1] == search_term)-1,i+1]
+      if (location == "above" || location == "up") {
+        found_data <- data[which(data[i+1] == search_term)-1,i+1]
       }
       i=i+1
     }
   }
+  ## for last column
   if (multiple == FALSE) {
     ## select 1st value
-    found_data <<- found_data[[1]][1]
+    found_data <- found_data[[1]][1]
+  }
+  ## if NA
+  if (is.na(found_data) || nrow(found_data) == 0) {
+    found_data <- paste0("Nothing string/label found called '",search_term,"'")
   }
   return(found_data)
 }
