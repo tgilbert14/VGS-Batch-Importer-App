@@ -125,14 +125,14 @@ batch_import <<- function(historical_raw_data) {
     print(paste0("Identifying keys for ", active_sheets[x]))
     
     if (test_mode == "base") stop("stop here to check out raw data form")
-    # View(data_import)
+    #View(data_import)
     
     ## finding meta data ->
     if (ServerKey == "USFS R6-RR") {
       source("scripts/USFS R6/R6_RR_site_info.R")
     }
     if (ServerKey == "USFS R4-BT") {
-      source("scripts/USFS R6/R4_BT_site_info.R")
+      source("scripts/USFS R4/R4_BT_site_info.R")
     }
     if (ServerKey == "NRCS AZ") {
       source("scripts/NRCS AZ/NRCS_AZ_site_info.R")
