@@ -48,3 +48,36 @@ Hex <- function(vgs5_guid) {
   return(hex_guid)
 }
 
+## finds data if to the right of label -> "search_term"
+## multiple=T -> should fuction return multiple values if present or select 1st value
+## location refers to selecting values location in reference to label
+## location -> ('below','above','right','left)
+find_label <<- function(data, search_term, multiple=TRUE, location="right") {
+  i=1 ## initial column search and variable (i+1 to get column to right of label)
+  found_data <<- data[which(data[[i]] == search_term),i+1]
+  ## can only do this for how many columns are in data sheet/dataframe
+  while ( (i < ncol(data)) && (nrow(found_data) == 0) ) {
+    ## if search term for data not found, check next column ->
+    if (nrow(found_data) == 0) {
+      ## i+1 for search term because data is alreay at coulumn '+1' (right)
+      if (location == "right") {
+        found_data <<- data[which(data[i+1] == search_term),i+2]
+      }
+      if (location == "left") {
+        found_data <<- data[which(data[i+1] == search_term),i]
+      }
+      if (location == "below") {
+        found_data <<- data[which(data[i+1] == search_term)+1,i+1]
+      }
+      if (location == "above") {
+        found_data <<- data[which(data[i+1] == search_term)-1,i+1]
+      }
+      i=i+1
+    }
+  }
+  if (multiple == FALSE) {
+    ## select 1st value
+    found_data <<- found_data[[1]][1]
+  }
+  return(found_data)
+}
