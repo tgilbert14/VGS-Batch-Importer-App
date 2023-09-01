@@ -14,7 +14,7 @@ mydb <<- dbConnect(RSQLite::SQLite(), dbname = db_loc)
 ## -----------------------------------------------------------------------------
 
 ## GUID creation function ------------------------------------------------------
-GUID <- function(type='pk', number_of_GUIDS=1) {
+GUID <<- function(type='pk', number_of_GUIDS=1) {
   ## generate generic GUID
   g<-uuid::UUIDgenerate(n=number_of_GUIDS)
   ## formatting based on type of GUID
@@ -31,7 +31,7 @@ GUID <- function(type='pk', number_of_GUIDS=1) {
 ## End of GUID function --------------------------------------------------------
 
 ## Standard to Hex Conversion
-Hex <- function(vgs5_guid) {
+Hex <<- function(vgs5_guid) {
   ## converting to hex
   guid<- vgs5_guid
   # Remove curly braces and hyphens
@@ -52,7 +52,7 @@ Hex <- function(vgs5_guid) {
 ## multiple=T -> should fuction return multiple values if present or select 1st value
 ## location refers to selecting values location in reference to label
 ## location -> ('below','above','right','left)
-find_label <- function(data, search_term, location, multiple=TRUE) {
+find_label <<- function(data, search_term, location, multiple=TRUE) {
   location <- tolower(location) ## formatting location selection - lower case
   i=1 ## initial column search and variable
   ## to check if label is in first row

@@ -8,11 +8,14 @@ library(DT)
 
 ## testing variables to stop app
 test_mode=FALSE
+#test_mode="protocol"
+#test_mode="eventG"
+#test_mode="events"
+#test_mode="protocol_2"
 #test_mode="base" ## stops for site meta_data
 #test_mode="data_page1" ## stops before data insert section
 #test_mode="wildcard"
-
-
+#closeAllConnections()
 ## -----------------------------------------------------------------------------
 ## Define UI 
 ui <- fluidPage(
@@ -67,7 +70,7 @@ server <- function(input, output) {
         filter_keys <- c("Rogue River-Siskiyou National Forests"="USFS R6-RR")
       }
       if (input$Protocol == "USFS R6 Rogue River Standard") {
-        p2 <- c("USFS R6 Rogue River - Tally", "No"="NULL")
+        p2 <- c("USFS R6 Rogue River - Tally", "NA"="NULL")
         filter_keys <- c("Rogue River-Siskiyou National Forests"="USFS R6-RR")
       }
       if (input$Protocol == "USFS R4 BTNF Range Monitoring") {

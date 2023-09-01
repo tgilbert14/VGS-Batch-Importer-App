@@ -410,12 +410,19 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   VALUES
   (", PK_Protocol, ",", FK_Type_Protocol, ",", Bailiwick, ",'", ProtocolName, "','", Event_Date, "',", DateEnd, ",", EventNotes, ",", SyncKey, ",", SyncState, ")")
   
+  if (test_mode == "protocol") {
+    insert_protocol<<-insert_protocol
+    sink()
+    closeAllConnections()
+    print(insert_protocol)
+    stop("stop here to review")
+  }
+  
   ## insert protocol into protocol table
   dbExecute(mydb, insert_protocol)
   
   ## update messages for function
   print(paste0("Creating Protocol Event for ", Event_Date))
-  
   
   ## then create EventGroups and Events-----------------------------------------
   ## need attributes from typelist -> query from protocol insert
@@ -443,16 +450,26 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   
   i <- 1
   while (i < length(match_formIDs[[1]]) + 1) {
+    
     all_formIDs[i] <- substr(Attributes_raw, match_formIDs[[1]][i] + 7, match_formIDs[[1]][i + 1] - 3)
     all_groupNames[i] <- paste0("'", substr(Attributes_raw, match_groupNames[[1]][i] + 9, match_groupNames[[1]][i + 1] - 3), "'")
     all_attributes[i] <- paste0("'", substr(Attributes_raw, match_attributes[[1]][i] + 18, match_attributes[[1]][i + 1] - 3), "'")
     all_FK_Type_EventGroups[i] <- substr(Attributes_raw, match_FK_Type_EventGroups[[1]][i] + 19, match_FK_Type_EventGroups[[1]][i + 1] - 3)
     all_displayOrders[i] <- as.numeric(substr(Attributes_raw, match_displayOrders[[1]][i] + 13, match_displayOrders[[1]][i + 1] - 3))
     # all_isActive[i]<- substr(Attributes_raw, match_isActive[[1]][i]+9, match_isActive[[1]][i+1]-3)
-    ## formatting xlm
+    ## formatting xlm -->
     all_attributes[i] <- gsub("&lt;", "<", all_attributes[i], fixed = T)
     all_attributes[i] <- gsub("&gt;", ">", all_attributes[i], fixed = T)
     all_attributes[i] <- gsub("[\r\n]", "", all_attributes[i], fixed = T)
+    all_attributes[i] <- gsub("amp;", "", all_attributes[i], fixed = T)
+    all_attributes[i] <- gsub("'", "", all_attributes[i], fixed = T)
+
+    # all_groupNames[i] <- gsub("&lt;", "<", all_groupNames[i], fixed = T)
+    # all_groupNames[i] <- gsub("&gt;", ">", all_groupNames[i], fixed = T)
+    # all_groupNames[i] <- gsub("[\r\n]", "", all_groupNames[i], fixed = T)
+    # all_groupNames[i] <- gsub("amp;", "", all_groupNames[i], fixed = T)
+    # all_groupNames[i] <- gsub("'", "", all_groupNames[i], fixed = T)
+    
     
     ## query for protocol correct guid for PK_Protocol
     protocol_check <- paste0("Select quote(PK_Protocol) from Protocol
@@ -479,7 +496,15 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
            ,SyncKey
            ,SyncState)
      VALUES
-           (", PK_EventGroup_GUIDS[[i]], ",", Hex(all_FK_Type_EventGroups[[i]]), ",", protocol_pk_check[[1]], ",", all_attributes[[i]], ",", all_groupNames[[i]], ",", all_displayOrders[[i]], ",", Hex(all_formIDs[[i]]), ",", SyncKey, ",", SyncState, ")")
+           (", PK_EventGroup_GUIDS[[i]], ",", Hex(all_FK_Type_EventGroups[[i]]), ",", protocol_pk_check[[1]], ",'", all_attributes[[i]], "',", all_groupNames[[i]], ",", all_displayOrders[[i]], ",", Hex(all_formIDs[[i]]), ",", SyncKey, ",", SyncState, ")")
+      
+      if (test_mode == "eventG") {
+        insert_eventGroup<<-insert_eventGroup
+        sink()
+        closeAllConnections()
+        print(insert_eventGroup)
+        stop("stop here to review")
+      }
       
       ## insert eventGroups into eventGroup table
       dbExecute(mydb, insert_eventGroup)
@@ -516,6 +541,7 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   
   i <- 1
   while (i < length(match_ParentFormIDs[[1]]) + 1) {
+
     all_EventAttributes[i] <- paste0("'", substr(Attributes_raw, match_EventAttributes[[1]][i] + 19, match_EventAttributes[[1]][i + 1] - 3), "'")
     all_FK_Type_Events[i] <- substr(Attributes_raw, match_FK_Type_Events[[1]][i] + 14, match_FK_Type_Events[[1]][i + 1] - 3)
     all_ParentformIDs[i] <- substr(Attributes_raw, match_ParentFormIDs[[1]][i] + 13, match_ParentFormIDs[[1]][i + 1] - 3)
@@ -527,6 +553,14 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
     all_EventAttributes[i] <- gsub("&lt;", "<", all_EventAttributes[i], fixed = T)
     all_EventAttributes[i] <- gsub("&gt;", ">", all_EventAttributes[i], fixed = T)
     all_EventAttributes[i] <- gsub("[\r\n]", "", all_EventAttributes[i], fixed = T)
+    all_EventAttributes[i] <- gsub("amp;", "", all_EventAttributes[i], fixed = T)
+    all_EventAttributes[i] <- gsub("'", "", all_EventAttributes[i], fixed = T)
+    
+    # all_EventNames[i] <- gsub("&lt;", "<", all_EventNames[i], fixed = T)
+    # all_EventNames[i] <- gsub("&gt;", ">", all_EventNames[i], fixed = T)
+    # all_EventNames[i] <- gsub("[\r\n]", "", all_EventNames[i], fixed = T)
+    # all_EventNames[i] <- gsub("amp;", "", all_EventNames[i], fixed = T)
+    # all_EventNames[i] <- gsub("'", "", all_EventNames[i], fixed = T)
     
     i <- i + 2
   }
@@ -544,6 +578,7 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   site_pk_check <- dbGetQuery(mydb, site_check)
   site_pk_check <- tolower(site_pk_check)
   substr(site_pk_check, 2, 2) <- toupper(substr(site_pk_check, 2, 2))
+
   
   i <- 1
   while (i < length(all_ParentformIDs) + 1) {
@@ -577,13 +612,25 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
          ,SyncKey
          ,SyncState)
    VALUES
-         (", PK_Event, ",", Hex(all_FK_Type_Events[i]), ",", site_pk_check[[1]], ",", FK_SiteClass, ",", eventG_pk_check[[1]], ",", all_EventNames[i], ",", all_EventAttributes[i], ",", all_PageNumbers[i], ",", all_EntryOrders[i], ",", Hex(all_DefaultEventIDs[i]), ",", SyncKey, ",", SyncState, ")")
+         (", PK_Event, ",", Hex(all_FK_Type_Events[i]), ",", site_pk_check[[1]], ",", FK_SiteClass, ",", eventG_pk_check[[1]], ",", all_EventNames[i], ",'", all_EventAttributes[i], "',", all_PageNumbers[i], ",", all_EntryOrders[i], ",", Hex(all_DefaultEventIDs[i]), ",", SyncKey, ",", SyncState, ")")
+      
+      print(paste0("about to insert event..",i))
+      
+      if (test_mode == "events") {
+        insert_events<<-insert_events
+        sink()
+        closeAllConnections()
+        print(insert_eventGroup)
+        stop("stop here to review")
+      }
+      
       ## insert eventGroups into eventGroup table
       dbExecute(mydb, insert_events)
     }
     i <- i + 2
   }
   ## End of Events -------------------------------------------------------------
+  
   
   ## update messages for function
   print(paste0("EventGroups and Events attached to ", ProtocolName))
@@ -641,6 +688,14 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   VALUES
   (", PK_Protocol_2, ",", FK_Type_Protocol, ",", Bailiwick, ",'", ProtocolName_2, "','", Event_Date, "',", DateEnd, ",", EventNotes, ",", SyncKey, ",", SyncState, ")")
     
+    if (test_mode == "protocol_2") {
+      insert_protocol_2<<-insert_protocol_2
+      sink()
+      closeAllConnections()
+      print(insert_protocol_2)
+      stop("stop here to review")
+    }
+    
     ## insert protocol into protocol table
     dbExecute(mydb, insert_protocol_2)
     
@@ -679,10 +734,18 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
       all_FK_Type_EventGroups[i] <- substr(Attributes_raw, match_FK_Type_EventGroups[[1]][i] + 19, match_FK_Type_EventGroups[[1]][i + 1] - 3)
       all_displayOrders[i] <- as.numeric(substr(Attributes_raw, match_displayOrders[[1]][i] + 13, match_displayOrders[[1]][i + 1] - 3))
       # all_isActive[i]<- substr(Attributes_raw, match_isActive[[1]][i]+9, match_isActive[[1]][i+1]-3)
-      ## formatting xlm
+      ## formatting xlm -->
       all_attributes[i] <- gsub("&lt;", "<", all_attributes[i], fixed = T)
       all_attributes[i] <- gsub("&gt;", ">", all_attributes[i], fixed = T)
       all_attributes[i] <- gsub("[\r\n]", "", all_attributes[i], fixed = T)
+      all_attributes[i] <- gsub("amp;", "", all_attributes[i], fixed = T)
+      all_attributes[i] <- gsub("'", "", all_attributes[i], fixed = T)
+      
+      # all_groupNames[i] <- gsub("&lt;", "<", all_groupNames[i], fixed = T)
+      # all_groupNames[i] <- gsub("&gt;", ">", all_groupNames[i], fixed = T)
+      # all_groupNames[i] <- gsub("[\r\n]", "", all_groupNames[i], fixed = T)
+      # all_groupNames[i] <- gsub("amp;", "", all_groupNames[i], fixed = T)
+      # all_groupNames[i] <- gsub("'", "", all_groupNames[i], fixed = T)
       
       ## query for protocol correct guid for PK_Protocol
       protocol_check_2 <- paste0("Select quote(PK_Protocol) from Protocol
@@ -709,7 +772,7 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
            ,SyncKey
            ,SyncState)
      VALUES
-           (", PK_EventGroup_GUIDS[[i]], ",", Hex(all_FK_Type_EventGroups[[i]]), ",", protocol_pk_check_2[[1]], ",", all_attributes[[i]], ",", all_groupNames[[i]], ",", all_displayOrders[[i]], ",", Hex(all_formIDs[[i]]), ",", SyncKey, ",", SyncState, ")")
+           (", PK_EventGroup_GUIDS[[i]], ",", Hex(all_FK_Type_EventGroups[[i]]), ",", protocol_pk_check_2[[1]], ",'", all_attributes[[i]], "',", all_groupNames[[i]], ",", all_displayOrders[[i]], ",", Hex(all_formIDs[[i]]), ",", SyncKey, ",", SyncState, ")")
         
         ## insert eventGroups into eventGroup table
         dbExecute(mydb, insert_eventGroup)
@@ -757,7 +820,15 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
       all_EventAttributes[i] <- gsub("&lt;", "<", all_EventAttributes[i], fixed = T)
       all_EventAttributes[i] <- gsub("&gt;", ">", all_EventAttributes[i], fixed = T)
       all_EventAttributes[i] <- gsub("[\r\n]", "", all_EventAttributes[i], fixed = T)
+      all_EventAttributes[i] <- gsub("amp;", "", all_EventAttributes[i], fixed = T)
+      all_EventAttributes[i] <- gsub("'", "", all_EventAttributes[i], fixed = T)
       
+      # all_EventNames[i] <- gsub("&lt;", "<", all_EventNames[i], fixed = T)
+      # all_EventNames[i] <- gsub("&gt;", ">", all_EventNames[i], fixed = T)
+      # all_EventNames[i] <- gsub("[\r\n]", "", all_EventNames[i], fixed = T)
+      # all_EventNames[i] <- gsub("amp;", "", all_EventNames[i], fixed = T)
+      # all_EventNames[i] <- gsub("'", "", all_EventNames[i], fixed = T)
+
       i <- i + 2
     }
     
@@ -808,7 +879,7 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
          ,SyncKey
          ,SyncState)
    VALUES
-         (", PK_Event, ",", Hex(all_FK_Type_Events[i]), ",", site_pk_check[[1]], ",", FK_SiteClass, ",", eventG_pk_check[[1]], ",", all_EventNames[i], ",", all_EventAttributes[i], ",", all_PageNumbers[i], ",", all_EntryOrders[i], ",", Hex(all_DefaultEventIDs[i]), ",", SyncKey, ",", SyncState, ")")
+         (", PK_Event, ",", Hex(all_FK_Type_Events[i]), ",", site_pk_check[[1]], ",", FK_SiteClass, ",", eventG_pk_check[[1]], ",", all_EventNames[i], ",'", all_EventAttributes[i], "',", all_PageNumbers[i], ",", all_EntryOrders[i], ",", Hex(all_DefaultEventIDs[i]), ",", SyncKey, ",", SyncState, ")")
         ## insert eventGroups into eventGroup table
         dbExecute(mydb, insert_events)
       }
