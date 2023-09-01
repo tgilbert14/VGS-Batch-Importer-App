@@ -410,6 +410,9 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   VALUES
   (", PK_Protocol, ",", FK_Type_Protocol, ",", Bailiwick, ",'", ProtocolName, "','", Event_Date, "',", DateEnd, ",", EventNotes, ",", SyncKey, ",", SyncState, ")")
   
+  ## log statment
+  print(paste0("insert protocol"))
+  
   if (test_mode == "protocol") {
     insert_protocol<<-insert_protocol
     sink()
@@ -497,6 +500,9 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
            ,SyncState)
      VALUES
            (", PK_EventGroup_GUIDS[[i]], ",", Hex(all_FK_Type_EventGroups[[i]]), ",", protocol_pk_check[[1]], ",'", all_attributes[[i]], "',", all_groupNames[[i]], ",", all_displayOrders[[i]], ",", Hex(all_formIDs[[i]]), ",", SyncKey, ",", SyncState, ")")
+      
+      ## log statment
+      print(paste0("insert event group to protocol"))
       
       if (test_mode == "eventG") {
         insert_eventGroup<<-insert_eventGroup
@@ -614,8 +620,9 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
    VALUES
          (", PK_Event, ",", Hex(all_FK_Type_Events[i]), ",", site_pk_check[[1]], ",", FK_SiteClass, ",", eventG_pk_check[[1]], ",", all_EventNames[i], ",'", all_EventAttributes[i], "',", all_PageNumbers[i], ",", all_EntryOrders[i], ",", Hex(all_DefaultEventIDs[i]), ",", SyncKey, ",", SyncState, ")")
       
-      print(paste0("about to insert event..",i))
-      
+      ## log statment
+      print(paste0("insert event to event group"))
+
       if (test_mode == "events") {
         insert_events<<-insert_events
         sink()
@@ -687,6 +694,9 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
     ,SyncState)
   VALUES
   (", PK_Protocol_2, ",", FK_Type_Protocol, ",", Bailiwick, ",'", ProtocolName_2, "','", Event_Date, "',", DateEnd, ",", EventNotes, ",", SyncKey, ",", SyncState, ")")
+    
+    ## log statment
+    print(paste0("insert protocol"))
     
     if (test_mode == "protocol_2") {
       insert_protocol_2<<-insert_protocol_2
@@ -773,6 +783,9 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
            ,SyncState)
      VALUES
            (", PK_EventGroup_GUIDS[[i]], ",", Hex(all_FK_Type_EventGroups[[i]]), ",", protocol_pk_check_2[[1]], ",'", all_attributes[[i]], "',", all_groupNames[[i]], ",", all_displayOrders[[i]], ",", Hex(all_formIDs[[i]]), ",", SyncKey, ",", SyncState, ")")
+        
+        ## log statment
+        print(paste0("insert event group to protocol"))
         
         ## insert eventGroups into eventGroup table
         dbExecute(mydb, insert_eventGroup)
@@ -880,6 +893,10 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
          ,SyncState)
    VALUES
          (", PK_Event, ",", Hex(all_FK_Type_Events[i]), ",", site_pk_check[[1]], ",", FK_SiteClass, ",", eventG_pk_check[[1]], ",", all_EventNames[i], ",'", all_EventAttributes[i], "',", all_PageNumbers[i], ",", all_EntryOrders[i], ",", Hex(all_DefaultEventIDs[i]), ",", SyncKey, ",", SyncState, ")")
+        
+        ## log statment
+        print(paste0("insert event to event group"))
+        
         ## insert eventGroups into eventGroup table
         dbExecute(mydb, insert_events)
       }

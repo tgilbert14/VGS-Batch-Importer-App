@@ -1,8 +1,7 @@
 ##R4_BT_site_info
-source()
 
 ## using find_label()
-site_name <<- find_label(historical_raw_data, "Site:", location = "down")
+site_name <<- find_label(historical_raw_data, "Site:", location = "right")
 event_date <<- find_label(historical_raw_data, "Visit Date:", location = "right")
 event_date <<- as.Date(as.numeric(event_date), origin = "1899-12-30")
 event_date <<- format(event_date, "%Y-%m-%d")
@@ -19,6 +18,9 @@ site_notes <<- find_label(historical_raw_data, "Notes:", location = "below")
 if (length(site_notes) == 0 || is.na(site_notes)) {
   site_notes <<- "NULL"
 }
+
+## no event notes for now
+EventNotes <<- "NULL"
 
 
 

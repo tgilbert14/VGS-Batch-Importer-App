@@ -6,16 +6,10 @@ library(shinydashboard)
 library(shinyalert)
 library(DT)
 
-## testing variables to stop app
-test_mode=FALSE
-#test_mode="protocol"
-#test_mode="eventG"
-#test_mode="events"
-#test_mode="protocol_2"
-#test_mode="base" ## stops for site meta_data
-#test_mode="data_page1" ## stops before data insert section
-#test_mode="wildcard"
-#closeAllConnections()
+## test mode
+test_mode=TRUE
+#test_mode=FALSE
+
 ## -----------------------------------------------------------------------------
 ## Define UI 
 ui <- fluidPage(
@@ -36,7 +30,20 @@ ui <- fluidPage(
                                      "USFS R4 BTNF Range Monitoring"),
                          multiple = F, selected = F),
       ## pop up UI's here after Protocol entry - see server side
-      shiny::actionButton(inputId = "create", label = "Batch Import Data", width = "100%")
+      shiny::actionButton(inputId = "create", label = "Batch Import Data", width = "100%"),
+      
+      ## if test mode
+      if (test_mode == TRUE) {
+        ## dev box
+        box(width = '100%', solidHeader = F, collapsed = T,
+            selectInput(inputId = "devMode",
+                        label = "Dev Mode Options",
+                        choices = c(FALSE,"protocol","eventG","events","protocol_2","base","data_page1","wildcard")
+                        
+            ))
+        ## end of dev box for test mode
+      }
+      
     ), ## end of side bar panel
    
     ## output area of shiny app - box
@@ -48,6 +55,7 @@ ui <- fluidPage(
                   ) ## end of tab panal - status
       ) ## end of tab set panal(s)
     ) ## end of box display
+    
   ) ## end of sidebar layout
 ) ## end of UI
 ## -----------------------------------------------------------------------------
@@ -55,6 +63,9 @@ ui <- fluidPage(
 ## -----------------------------------------------------------------------------
 ## Define server logic
 server <- function(input, output) {
+  
+  ## override test mode if selected
+  test_mode<<- input$devMode
   
   ## initial NULL Value - keeps spinner from showing at app load
   output$status <- renderTable(NULL)
@@ -139,6 +150,12 @@ server <- function(input, output) {
       
     }) ## end of render table
   }) ## end of observe event
+  
+  ## on session end -> make sure connections closed
+  session$onSessionEnded(function() {
+    DBI::dbDisconnect(mydb)
+    closeAllConnections()
+  })
 } ## end of server
 ## -----------------------------------------------------------------------------
 
