@@ -62,16 +62,16 @@ ui <- fluidPage(
 
 ## -----------------------------------------------------------------------------
 ## Define server logic
-server <- function(input, output) {
-  
-  ## override test mode if selected
-  test_mode<<- input$devMode
+server <- function(input, output, session) {
   
   ## initial NULL Value - keeps spinner from showing at app load
   output$status <- renderTable(NULL)
   
   ## for UI drop downs ----
   observe({
+    ## override test mode if selected
+    test_mode<<- input$devMode
+    
     ## if value is selected ->
     if (input$Protocol != "NULL") {
 
