@@ -215,6 +215,8 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   
   ## Guid for site pk
   PK_Site <- GUID()
+  ## save for another function - siteClassLink
+  site_PK <<- PK_Site
   ## insert site sql statement
   insert_site <<- paste0("INSERT INTO Site
            (PK_Site
@@ -295,6 +297,15 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   ## update messages for function
   print(paste0("Creating schema"))
   
+  # ## query site to get PK_Site for insert -->
+  # site_check_q<- paste0("Select quote(PK_Site) from Site
+  # Where SiteID = '",site_name,"'")
+  # 
+  # ## execute query
+  # site_pk<- dbGetQuery(mydb, site_check_q)
+  # ## PK_Site for siteClassLink insert
+  # site_PK<- site_pk$`quote(PK_Site)`
+  
   ## query VGS db to see folders that are there already
   siteClassCheck<- paste0("Select quote(PK_SiteClass), quote(CK_ParentClass), ClassName from SiteClass")
   
@@ -329,13 +340,13 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
       filter(ClassName == paste0(ranger_district))
     ## if it does not exist - then create
     if (nrow(check)==0) {
-      create_schema(ClassName = paste0("'",ranger_district,"'"), CK_ParentClass = parent)
+      create_schema(ClassName = paste0("'",ranger_district,"'"), CK_ParentClass = parent, SitePK = "NULL")
     } ## if exists then leave as it...
   }
   ## ranger district if blank
   if (to_create_rd == FALSE) {
     ranger_district<- "Unknown Ranger District"
-    create_schema(ClassName = paste0("'",ranger_district,"'"), CK_ParentClass = parent)
+    create_schema(ClassName = paste0("'",ranger_district,"'"), CK_ParentClass = parent, SitePK = "NULL")
   }
   
   ## query db for new siteClass folders
@@ -353,13 +364,23 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
       filter(ClassName == paste0(forest))
     ## if it does not exist - then create
     if (nrow(check)==0) {
-      create_schema(ClassName = paste0("'",forest,"'"), CK_ParentClass = parent)
+      create_schema(ClassName = paste0("'",forest,"'"), CK_ParentClass = parent, SitePK = "NULL")
     } ## leave as is if not...
   }
   ## forest if blank
   if (to_create_forest == FALSE) {
+    ## check if folder exits
     forest<- "Unknown Forest"
-    create_schema(ClassName = paste0("'",forest,"'"), CK_ParentClass = parent)
+    ## check if folder exits
+    check_u<- folder_check %>% 
+      filter(ClassName == paste0(forest))
+    ## filter parent has correct parent folder (ranger district)
+    check_u2<- check_u %>% 
+      filter(`quote(CK_ParentClass)` == check_rd$`quote(PK_SiteClass)`)
+    ## only create if does not exist
+    if (nrow(check_u2)==0) {
+      create_schema(ClassName = paste0("'",forest,"'"), CK_ParentClass = parent, SitePK = "NULL")
+    }
   }
   
   ## query db for new siteClass folders
@@ -391,16 +412,25 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
       filter(ClassName == paste0(allotment))
     ## now check if there is a folder, it has the same parent/filter to correct one
     check_2<- check %>% 
-      filter(`quote(CK_ParentClass)` == check_f$`quote(PK_SiteClass)`)
+      filter(`quote(CK_ParentClass)` == check_f2$`quote(PK_SiteClass)`)
     ## if it does not exist - then create
     if (nrow(check_2)==0) {
-      create_schema(ClassName = paste0("'",allotment,"'"), CK_ParentClass = parent)
+      create_schema(ClassName = paste0("'",allotment,"'"), CK_ParentClass = parent, SitePK = "NULL")
     } ## if exists, leave as is...
   }
   ## allotment if blank
   if (to_create_allotment == FALSE) {
     allotment<- "Unknown Allotment"
-    create_schema(ClassName = paste0("'",allotment,"'"), CK_ParentClass = parent)
+    ## check if folder exits already
+    check_u<- folder_check %>% 
+      filter(ClassName == paste0(allotment))
+    ## now check if there is a folder, it has the same parent/filter to correct one
+    check_u2<- check_u %>% 
+      filter(`quote(CK_ParentClass)` == check_f2$`quote(PK_SiteClass)`)
+    ## only create if does not exist
+    if (nrow(check_u2)==0) {
+      create_schema(ClassName = paste0("'",allotment,"'"), CK_ParentClass = parent, SitePK = "NULL")
+    }
   }
   
   ## query db for new siteClass folders
@@ -412,7 +442,7 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
 
   ## filter parent has correct parent folder (allotment)
   check_a2<- check_a %>% 
-    filter(`quote(CK_ParentClass)` == check_f$`quote(PK_SiteClass)`)
+    filter(`quote(CK_ParentClass)` == check_f2$`quote(PK_SiteClass)`)
 
   ## assign parent to current folder
   parent<- check_a2$`quote(PK_SiteClass)`
@@ -423,6 +453,7 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
     check<<- check
     forest<<- forest
     allotment<<- allotment
+    ranger_district<<- ranger_district
     folder_check<<- folder_check
     stop("check pasture site insert...")
   }
@@ -432,26 +463,34 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
     ## check if folder exits already
     check<- folder_check %>% 
       filter(ClassName == paste0(pasture))
-    
     ## check if parent PK matches parent of current folder
     check_2<- check %>% 
-      filter(`quote(CK_ParentClass)` == check_a$`quote(PK_SiteClass)`)
-    
+      filter(`quote(CK_ParentClass)` == check_a2$`quote(PK_SiteClass)`)
     ## if it does not exist - then create
     if (nrow(check_2)==0) {
-      create_schema(ClassName = paste0("'",pasture,"'"), CK_ParentClass = parent)
-    } ## if exists, leave as is...
+      create_schema(ClassName = paste0("'",pasture,"'"), CK_ParentClass = parent, SitePK = site_PK, PK_SiteClass = check_2$`quote(PK_SiteClass)`)
+      ## if parent folder exists already, still need to put if correct folder
+      } else {update_schema(SitePK = site_PK, PK_SiteClass = check_2$`quote(PK_SiteClass)`)}
   }
   ## pasture if blank
   if (to_create_pasture == FALSE) {
     pasture<- "Unknown Pasture"
-    create_schema(ClassName = paste0("'",pasture,"'"), CK_ParentClass = parent)
+    check_u<- folder_check %>% 
+      filter(ClassName == paste0(pasture))
+    ## check if parent PK matches parent of current folder
+    check_u2<- check_u %>% 
+      filter(`quote(CK_ParentClass)` == check_a2$`quote(PK_SiteClass)`)
+    ## if it does not exist - then create
+    if (nrow(check_u2)==0) {
+      create_schema(ClassName = paste0("'",pasture,"'"), CK_ParentClass = parent, SitePK = site_PK, PK_SiteClass = check_u2$`quote(PK_SiteClass)`)
+      ## if parent folder exists already, still need to put if correct folder
+    } else {update_schema(SitePK = site_PK, PK_SiteClass = check_u2$`quote(PK_SiteClass)`)}
   }
+  ## end of folder creation
   
-  ## end of placing site into correct schema -----------------------------------
-  
-    
-
+  ## placing site in correct folder (siteClassLink)
+  ## or add to schema function....
+  ## end of placing site into correct schema
   
   print("Finding Protocol in .db")
   ## Protocols Section
@@ -1248,12 +1287,12 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
 ## in progress...
 
 
-## insert statement to create folder schema for site
-create_schema <- function(ClassName,CK_ParentClass="NULL",PK_SiteClass="NULL",FK_Species_SiteClass="NULL",ClassID="NULL",Description="NULL",SyncKey=33,SyncState=1) {
-  
-  PK_SiteClass <- GUID()
-  
-  insert_siteClass <- paste0("INSERT INTO siteClass
+## insert statement to create folder schema for site and place site in folder
+create_schema <- function(ClassName,CK_ParentClass="NULL",SitePK,PK_SiteClass="NULL",FK_Species_SiteClass="NULL",ClassID="NULL",Description="NULL",SyncKey=33,SyncState=1) {
+
+    PK_SiteClass <- GUID()
+    
+    insert_siteClass <- paste0("INSERT INTO siteClass
            (PK_SiteClass,
            PK_SiteClass,
            FK_Species_SiteClass,
@@ -1265,10 +1304,49 @@ create_schema <- function(ClassName,CK_ParentClass="NULL",PK_SiteClass="NULL",FK
            SyncState)
      VALUES
            (",PK_SiteClass,",",PK_SiteClass,",",FK_Species_SiteClass,",",CK_ParentClass,",",ClassID,",",ClassName,",",Description,",",SyncKey,",",SyncState,")")
-  
-  ## insert siteClass
-  dbExecute(mydb, insert_siteClass)
+    
+    ## insert siteClass
+    dbExecute(mydb, insert_siteClass)
+    
+    ## then insert siteClassLinks
+    if (SitePK != "NULL") {
+      
+      PK_SiteClassLink <- GUID()
+      
+      insert_siteClassLink <- paste0("INSERT INTO siteClassLink
+           (PK_SiteClassLink,
+           FK_Site,
+           FK_SiteClass,
+           SyncKey,
+           SyncState)
+     VALUES
+           (",PK_SiteClassLink,",",SitePK,",",PK_SiteClass,",",SyncKey,",",SyncState,")")
+      
+      ## insert siteClass
+      dbExecute(mydb, insert_siteClassLink)
+    }
+}
+
+
+## update schema only
+update_schema <- function(SitePK,PK_SiteClass,SyncKey=33,SyncState=1) {
   
   ## then insert siteClassLinks
+  if (SitePK != "NULL") {
+    
+    PK_SiteClassLink <- GUID()
+
+    insert_siteClassLink <- paste0("INSERT INTO siteClassLink
+           (PK_SiteClassLink,
+           FK_Site,
+           FK_SiteClass,
+           SyncKey,
+           SyncState)
+     VALUES
+           (",PK_SiteClassLink,",",SitePK,",",PK_SiteClass,",",SyncKey,",",SyncState,")")
+    
+    ## insert siteClass
+    dbExecute(mydb, insert_siteClassLink)
+  }
 
 }
