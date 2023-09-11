@@ -6,6 +6,7 @@ event_date <<- find_label(historical_raw_data, "Visit Date:", location = "right"
 event_date <<- as.Date(as.numeric(event_date), origin = "1899-12-30")
 event_date <<- format(event_date, "%Y-%m-%d")
 event_date <<- paste0(event_date, " 00:00:00")
+site_name <<- paste0(site_name," (",substr(event_date,0,7),")")
 
 elevation <<- find_label(historical_raw_data, "Elevation:", location = "below")
 slope <<- find_label(historical_raw_data, "Slope (%)", location = "below")

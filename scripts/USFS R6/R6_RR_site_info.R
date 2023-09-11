@@ -7,6 +7,8 @@ event_date <<- historical_raw_data[grep("date", historical_raw_data[[1]], ignore
 event_date <<- as.Date(as.numeric(event_date), origin = "1899-12-30")
 event_date <<- format(event_date, "%Y-%m-%d")
 event_date <<- paste0(event_date, " 00:00:00")
+##update site name to have date so unique for now...
+site_name <<- paste0(site_name," (",substr(event_date,0,7),")")
 ## spelling error for key below -->
 elevation <<- historical_raw_data[grep("elevat", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
 # elevation <- historical_raw_data[grep("elevation", historical_raw_data[[1]], ignore.case = TRUE),][[2]]
