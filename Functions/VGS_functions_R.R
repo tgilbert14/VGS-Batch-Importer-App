@@ -101,7 +101,7 @@ find_label <<- function(data, search_term, location, multiple=TRUE) {
   }
   ## if NA
   if (is.na(found_data) || nrow(found_data) == 0) {
-    found_data <- paste0("Nothing string/label found called '",search_term,"'")
+    found_data <- paste0("Nothing found called '",search_term,"'")
   }
   return(found_data)
 }

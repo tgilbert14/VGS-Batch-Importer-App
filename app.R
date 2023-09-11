@@ -1,3 +1,7 @@
+## set environment path
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+app_path<-getwd()
+
 ## global - libraries
 library(shiny)
 library(shinythemes)
@@ -6,7 +10,7 @@ library(shinydashboard)
 library(shinyalert)
 library(DT)
 
-## test mode
+## test mode - TRUE to show DEV mode
 test_mode=TRUE
 #test_mode=FALSE
 
@@ -38,7 +42,7 @@ ui <- fluidPage(
         box(width = '100%', solidHeader = F, collapsed = T,
             selectInput(inputId = "devMode",
                         label = "Dev Mode Options",
-                        choices = c(FALSE,"protocol","eventG","events","protocol_2","base","data_page1","wildcard")
+                        choices = c(FALSE,"allotment","pasture","protocol","eventG","events","protocol_2","base","data_page1","wildcard")
                         
             ))
         ## end of dev box for test mode
@@ -117,8 +121,8 @@ server <- function(input, output, session) {
     sink("www/r_output.txt")
     
     ## pointing to VGS functions for batch data import
-    source("Functions/VGS_functions_R.R", local = T)
-    source("Functions/historical_data_importer.R", local = T)
+    source(paste0(app_path,"/Functions/VGS_functions_R.R"), local = T)
+    source(paste0(app_path,"/Functions/historical_data_importer.R"), local = T)
     read_import_data(Protocol = input$Protocol, ServerKey = input$ServerKey, Protocol_2 = input$Protocol_2)
     
     ## close connections from local VGS db
@@ -153,8 +157,8 @@ server <- function(input, output, session) {
   
   ## on session end -> make sure connections closed
   session$onSessionEnded(function() {
-    DBI::dbDisconnect(mydb)
-    closeAllConnections()
+    suppressWarnings(DBI::dbDisconnect(mydb))
+    suppressWarnings(closeAllConnections())
   })
 } ## end of server
 ## -----------------------------------------------------------------------------

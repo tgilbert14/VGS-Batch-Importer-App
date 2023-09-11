@@ -41,3 +41,9 @@ if (length(site_notes_2) == 0 || is.na(site_notes_2)) {
 ## LOCATOR TABLE -->
 lat <- historical_raw_data[grep("latitude", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
 long <- historical_raw_data[grep("longitude", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
+
+## SiteClass Table -->
+pasture <- find_label(historical_raw_data, search_term = "Pasture", location = "right")
+allotment <- find_label(historical_raw_data, search_term = "Allotment", location = "right")
+forest <- find_label(historical_raw_data, search_term = "Forest", location = "right")
+ranger_district <- find_label(historical_raw_data, search_term = "Ranger District", location = "right")

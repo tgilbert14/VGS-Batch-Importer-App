@@ -1,6 +1,6 @@
 ## Historical Data importer
-## set enviorment
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+## set environment
+#setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 ## Read in libraries -----------------------------------------------------------
 library(uuid)
 library(tidyverse)
@@ -9,14 +9,15 @@ library(DBI)
 library(RSQLite)
 library(stringr)
 
-
 ## [[ 1st function ]]
 ## READ IMPORT DATA FUNCTION ---------------------------------------------------
 ## >This function reads in all excel tabs and saves them, sends them to next
 ##  function(s) for import data process. Primarily gets raw data and passes it
 ##  on to functions over and over until all data selected is imported...
 read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
+  ## path for VGS database
   db_loc <- "C:/ProgramData/VGSData/VGS50.db"
+  ## connecting to VGS database
   mydb <- dbConnect(RSQLite::SQLite(), dbname = db_loc)
   ## Save to parent environment for later
   ServerKey <<- ServerKey
@@ -24,25 +25,27 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
   Protocol_2 <<- Protocol_2
   output_list<<- data.frame(FileNumber=numeric(),CompletedFileList=character())
   
-  ## choosing file to import
-  data_file <<- choose.files("Choose Historical Data to import (excel)")
+  ## choosing files to import - built to handle multipe
+  data_file <<- choose.files("Choose Historical Data to import (excel)", multi = T)
+  ## variable to check if user selected anything
   the_void <- character(0)
   
   if (identical(data_file, the_void)) {
-    ## alert for data import start ->
+    ## alert for data import start -> if identical, no data selected
     shinyalert("No Data Selected", "Refresh the page and choose a file!",
                imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
                imageWidth = 100, imageHeight = 100, type = "error", 
                timer = 2500)
+    ## wait 5 seconds, then stop the script
     Sys.sleep(5)
-    if (identical(data_file, the_void)) stop(paste0("No Data Selected - Choose a file!"))
+    stop(paste0("No Data Selected - Choose a file!"))
   }
   
   ## alert for data import start ->
-  shinyalert("...is crunching your data now", "YUM! Please wait for next update.",
+  shinyalert("...is crunching your data now", "Please wait, looking for data keys",
              imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
-             imageWidth = 100, imageHeight = 100, type = "success", 
-             timer = 2500)
+             imageWidth = 100, imageHeight = 100, type = "success", closeOnClickOutside = T,
+             showConfirmButton = F,timer = 2600)
   
   ## reading in sheets to list
   historical_data <<- list()
@@ -164,36 +167,6 @@ batch_import <<- function(historical_raw_data) {
       Event_Date = event_date, Elevation = elevation, Slope = slope, Aspect = aspect,
       DDLat = lat, DDLong = long, EventNotes = EventNotes, Notes = site_notes
     )
-    
-    
-    # ## placing site into correct folder schema ---------------------------------
-    #
-    # ## SITECLASS and SITECLASSLINK(S) -->
-    # pasture_folder <- historical_raw_data[grep("pasture",
-    #                                            historical_raw_data[[1]], ignore.case = TRUE),][[2]]
-    # allotment_folder <- historical_raw_data[grep("allotment",
-    #                                              historical_raw_data[[1]], ignore.case = TRUE),][[2]]
-    #
-    # ## query vgs 5 local db to see if folder schema already exists
-    # ## Query to get Schema SiteClass(s)
-    # SiteClass_query <- paste0("SELECT quote(PK_SiteClass), ClassName, quote(Ck_ParentClass)from SiteClass")
-    # ## table from VGS local .db
-    # vgs_siteClass <- dbGetQuery(mydb, SiteClass_query)
-    #
-    # ## looking for pasture folder
-    # #grepl(pasture_folder, vgs_siteClass$ClassName)
-    # vgs_siteClass[vgs_siteClass$ClassName == "New Folder",]
-    # ## looking for allotment folder with same pasture folder
-    #
-    
-    
-    # SiteClassLinks_query <- paste0("SELECT quote(Ck_ParentClass), ClassName from SiteClassLink
-    # inner join siteclass on siteclass.PK_SiteClass = siteClassLink.FK_SiteClass")
-    # ## table from VGS local .db
-    # vgs_siteClassLink <- dbGetQuery(mydb, SiteClassLinks_query)
-    
-    
-    ## end of placing site into correct schema ---------------------------------
   }
   
   ## OTHER TABS ---- other than the first and not "site Meta Data" tabs
@@ -230,40 +203,6 @@ batch_import <<- function(historical_raw_data) {
 ## [[ 3rd function ]]
 ## CREATE SITE FUNCTION --------------------------------------------------------
 create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date, EventNotes = "NULL", DDLat = "NULL", DDLong = "NULL", IsPrimary = 1, Slope = "NULL", Aspect = "NULL", Elevation = "NULL", DateEstablished = "NULL", SyncKey = 33, SyncState = 1, FK_Species_Site = "'SITE_KEY'", FK_Species_SiteStatus = "'SST_ACTIVE'", FK_Species_ElevUnits = "'UNIT_FEET'", FK_Species_Locator = "'LOC_MARKER'", LocatorID = "NULL", L_Description = "NULL", L_Date = "NULL", LocatorElevation = "NULL", L_SyncKey = 33, L_SyncState = 0, DateEnd = "NULL", Bailiwick = "NULL", FK_SiteClass = "NULL") {
-  
-  # SyncKey <<- 33
-  # SyncState <<- 1
-  
-  # ## For testing ----
-  # ProtocolName = Protocol
-  # ProtocolName_2 = Protocol_2
-  # SiteID = site_name
-  # Event_Date = event_date
-  # Elevation = elevation
-  # Slope = slope
-  # Aspect = aspect
-  # DDLat = lat
-  # DDLong = long
-  # EventNotes=EventNotes
-  # FK_Species_Site="'SITE_KEY'"
-  # FK_Species_SiteStatus="'SST_ACTIVE'"
-  # FK_Species_ElevUnits="'UNIT_FEET'"
-  # FK_Species_Locator="'LOC_MARKER'"
-  # DateEstablished='NULL'
-  # SyncKey=33
-  # SyncState=1
-  # DateEnd="NULL"
-  # Bailiwick="NULL"
-  # L_Description="NULL"
-  # L_Date="NULL"
-  # LocatorElevation="NULL"
-  # L_SyncKey=33
-  # L_SyncState=0
-  # FK_SiteClass="NULL"
-  # LocatorID="NULL"
-  # IsPrimary=1
-  # ## End of testing ----
-  # print("Starting site insert...")
   
   ## adding quotes if data present
   if (site_notes != "NULL" || is.na(site_notes) || length(site_notes) == 0) {
@@ -352,6 +291,167 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
     print(paste0("Locator created -> ", site_name))
   }
   ## End of Locator ------------------------------------------------------------
+    
+  ## update messages for function
+  print(paste0("Creating schema"))
+  
+  ## query VGS db to see folders that are there already
+  siteClassCheck<- paste0("Select quote(PK_SiteClass), quote(CK_ParentClass), ClassName from SiteClass")
+  
+  folder_check<- dbGetQuery(mydb, siteClassCheck)
+  
+  ## creating folders up to 4 layered schema, largest folder 1st 'Parent Folder'-->
+  ## if it does not have nothing found and exists = then insert/create folder
+  
+  ## variables to make folder check easier
+  to_create_rd<- !grepl("Nothing found called", ranger_district) && nchar(ranger_district)>0
+  to_create_forest<- !grepl("Nothing found called", forest) && nchar(forest)>0
+  to_create_allotment<- !grepl("Nothing found called", allotment) && nchar(allotment)>0
+  to_create_pasture<- !grepl("Nothing found called", pasture) && nchar(pasture)>0
+  
+  ## formatting names/labels
+  pasture<- paste0(pasture," Pasture")
+  allotment<- paste0(allotment," Allotment")
+  forest<- paste0(forest," National Forest")
+  ranger_district<- paste0(ranger_district," Ranger District")
+  pasture<- str_to_title(pasture)
+  allotment<- str_to_title(allotment)
+  forest<- str_to_title(forest)
+  ranger_district<- str_to_title(ranger_district)
+  
+  ## creates folder under "local" folder - Default to Local
+  parent<- paste0("X'11111111111111111111111111111111'")
+  
+  ## ranger district if value
+  if (to_create_rd == TRUE) {
+    ## check if folder exits already
+    check<- folder_check %>% 
+      filter(ClassName == paste0(ranger_district))
+    ## if it does not exist - then create
+    if (nrow(check)==0) {
+      create_schema(ClassName = paste0("'",ranger_district,"'"), CK_ParentClass = parent)
+    } ## if exists then leave as it...
+  }
+  ## ranger district if blank
+  if (to_create_rd == FALSE) {
+    ranger_district<- "Unknown Ranger District"
+    create_schema(ClassName = paste0("'",ranger_district,"'"), CK_ParentClass = parent)
+  }
+  
+  ## query db for new siteClass folders
+  folder_check<- dbGetQuery(mydb, siteClassCheck)
+  ## filter to parent
+  check_rd <- folder_check %>% 
+    filter(ClassName == paste0(ranger_district))
+  ## assign parent to current folder
+  parent<- check_rd$`quote(PK_SiteClass)`
+  
+  ## forest if value
+  if (to_create_forest == TRUE) {
+    ## check if folder exits
+    check<- folder_check %>% 
+      filter(ClassName == paste0(forest))
+    ## if it does not exist - then create
+    if (nrow(check)==0) {
+      create_schema(ClassName = paste0("'",forest,"'"), CK_ParentClass = parent)
+    } ## leave as is if not...
+  }
+  ## forest if blank
+  if (to_create_forest == FALSE) {
+    forest<- "Unknown Forest"
+    create_schema(ClassName = paste0("'",forest,"'"), CK_ParentClass = parent)
+  }
+  
+  ## query db for new siteClass folders
+  folder_check<- dbGetQuery(mydb, siteClassCheck)
+  ## parent
+  check_f <- folder_check %>% 
+    filter(ClassName == paste0(forest))
+  ## filter parent has correct parent folder (ranger district)
+  check_f2<- check_f %>% 
+    filter(`quote(CK_ParentClass)` == check_rd$`quote(PK_SiteClass)`)
+  
+  ## assign parent to current folder
+  parent<- check_f2$`quote(PK_SiteClass)`
+  
+  if (test_mode == "allotment") {
+    #check_rd<<- check_rd
+    parent<<- parent
+    check<<- check
+    forest<<- forest
+    allotment<<- allotment
+    folder_check<<- folder_check
+    stop("check allotment site insert...")
+  }
+
+  ## allotment if value
+  if (to_create_allotment == TRUE) {
+    ## check if folder exits already
+    check<- folder_check %>% 
+      filter(ClassName == paste0(allotment))
+    ## now check if there is a folder, it has the same parent/filter to correct one
+    check_2<- check %>% 
+      filter(`quote(CK_ParentClass)` == check_f$`quote(PK_SiteClass)`)
+    ## if it does not exist - then create
+    if (nrow(check_2)==0) {
+      create_schema(ClassName = paste0("'",allotment,"'"), CK_ParentClass = parent)
+    } ## if exists, leave as is...
+  }
+  ## allotment if blank
+  if (to_create_allotment == FALSE) {
+    allotment<- "Unknown Allotment"
+    create_schema(ClassName = paste0("'",allotment,"'"), CK_ParentClass = parent)
+  }
+  
+  ## query db for new siteClass folders
+  folder_check<- dbGetQuery(mydb, siteClassCheck)
+  
+  ## filter to parent
+  check_a<- folder_check %>% 
+    filter(ClassName == paste0(allotment))
+
+  ## filter parent has correct parent folder (allotment)
+  check_a2<- check_a %>% 
+    filter(`quote(CK_ParentClass)` == check_f$`quote(PK_SiteClass)`)
+
+  ## assign parent to current folder
+  parent<- check_a2$`quote(PK_SiteClass)`
+  
+  if (test_mode == "pasture") {
+    #check_rd<<- check_rd
+    parent<<- parent
+    check<<- check
+    forest<<- forest
+    allotment<<- allotment
+    folder_check<<- folder_check
+    stop("check pasture site insert...")
+  }
+  
+  ## pasture if value
+  if (to_create_pasture == TRUE) {
+    ## check if folder exits already
+    check<- folder_check %>% 
+      filter(ClassName == paste0(pasture))
+    
+    ## check if parent PK matches parent of current folder
+    check_2<- check %>% 
+      filter(`quote(CK_ParentClass)` == check_a$`quote(PK_SiteClass)`)
+    
+    ## if it does not exist - then create
+    if (nrow(check_2)==0) {
+      create_schema(ClassName = paste0("'",pasture,"'"), CK_ParentClass = parent)
+    } ## if exists, leave as is...
+  }
+  ## pasture if blank
+  if (to_create_pasture == FALSE) {
+    pasture<- "Unknown Pasture"
+    create_schema(ClassName = paste0("'",pasture,"'"), CK_ParentClass = parent)
+  }
+  
+  ## end of placing site into correct schema -----------------------------------
+  
+    
+
   
   print("Finding Protocol in .db")
   ## Protocols Section
@@ -1146,10 +1246,29 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
 
 
 ## in progress...
+
+
 ## insert statement to create folder schema for site
-create_schema <- function() {
-  ## in progress
+create_schema <- function(ClassName,CK_ParentClass="NULL",PK_SiteClass="NULL",FK_Species_SiteClass="NULL",ClassID="NULL",Description="NULL",SyncKey=33,SyncState=1) {
+  
+  PK_SiteClass <- GUID()
+  
+  insert_siteClass <- paste0("INSERT INTO siteClass
+           (PK_SiteClass,
+           PK_SiteClass,
+           FK_Species_SiteClass,
+           CK_ParentClass,
+           ClassID,
+           ClassName,
+           Description,
+           SyncKey,
+           SyncState)
+     VALUES
+           (",PK_SiteClass,",",PK_SiteClass,",",FK_Species_SiteClass,",",CK_ParentClass,",",ClassID,",",ClassName,",",Description,",",SyncKey,",",SyncState,")")
+  
+  ## insert siteClass
+  dbExecute(mydb, insert_siteClass)
+  
+  ## then insert siteClassLinks
+
 }
-
-
-
