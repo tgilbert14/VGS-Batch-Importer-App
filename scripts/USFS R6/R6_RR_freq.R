@@ -42,8 +42,6 @@ EventName = 'Frequency (by quadrat)'")
   Event_guid_info <- DBI::dbGetQuery(mydb, find_event_guid)
   checked_PK_Event <- Event_guid_info$`quote(PK_Event)`[1]
   
-  # stop("stop here")
-  
   ## insert nested freq data
   insert_data(data = nest_freq_ready, method = "NF", FK_Event = checked_PK_Event, Transect = belt_num, SyncKey = 33, SyncState = 1)
 }

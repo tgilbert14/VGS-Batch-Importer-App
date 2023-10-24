@@ -41,11 +41,24 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     stop(paste0("No Data Selected - Choose a file!"))
   }
   
-  ## alert for data import start ->
-  shinyalert("...is crunching your data now", "Please wait, looking for data keys",
-             imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
-             imageWidth = 100, imageHeight = 100, type = "success", closeOnClickOutside = T,
-             showConfirmButton = F,timer = 2600)
+  ## if NOT IN Power Mode
+  if (power_mode == FALSE) {
+    ## alert for data import start ->
+    shinyalert("...is crunching your data now", "Please wait, looking for data keys",
+               imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
+               imageWidth = 100, imageHeight = 100, type = "success", closeOnClickOutside = T,
+               showConfirmButton = F,timer = 2600)
+  }
+  ## if IN Power Mode
+  if (power_mode == TRUE) {
+    ## alert for data import start ->
+    shinyalert("...is running in POWER MODE", "All data will try to be forced into the VGS database",
+               imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
+               imageWidth = 100, imageHeight = 100, type = "success", closeOnClickOutside = T,
+               showConfirmButton = F,timer = 2600)
+  }
+  
+
   
   ## reading in sheets to list
   historical_data <<- list()
@@ -122,14 +135,29 @@ batch_import <<- function(historical_raw_data) {
   
   ## only does this is there is site meta data
   ## if it is the first sheet/tab or it is a specific sheet tab name "Site Metadata",etc...
-  if (x == 1 || active_sheets[batch_file] == "Site Metadata" || active_sheets[batch_file] == "SiteData") {
+  SiteCheck_R6_RR<- active_sheets[x] == "SiteMetaData"
+  SiteCheck_R4_BT<- active_sheets[x] == "Nested Frequency Line 1"
+  
+  if (SiteCheck_R6_RR == TRUE) {
     print(paste0("Reading ", active_sheets[x]))
     print(paste0("Found SiteData info for file ", batch_file, " -> ", active_sheets[x]))
     print(paste0("Identifying keys for ", active_sheets[x]))
     
-    if (test_mode == "base") stop("stop here to check out raw data form")
-    #View(data_import)
-    
+    ## reset variables for folder schema
+    suppressWarnings(list(
+      rm(to_create_rd),
+      rm(to_create_forest),
+      rm(to_create_allotment),
+      rm(to_create_pasture),
+      rm(pasture),
+      rm(allotment),
+      rm(forest),
+      rm(ranger_district),
+      rm(pasture),
+      rm(allotment),
+      rm(forest),
+      rm(ranger_district)))
+
     ## finding meta data ->
     if (ServerKey == "USFS R6-RR") {
       source("scripts/USFS R6/R6_RR_site_info.R")
@@ -295,7 +323,7 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   ## End of Locator ------------------------------------------------------------
     
   ## update messages for function
-  print(paste0("Creating schema"))
+  print(paste0("Creating Folder Schema for Site"))
   
   # ## query site to get PK_Site for insert -->
   # site_check_q<- paste0("Select quote(PK_Site) from Site
@@ -313,12 +341,23 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   
   ## creating folders up to 4 layered schema, largest folder 1st 'Parent Folder'-->
   ## if it does not have nothing found and exists = then insert/create folder
-  
+
   ## variables to make folder check easier
-  to_create_rd<- !grepl("Nothing found called", ranger_district) && nchar(ranger_district)>0
-  to_create_forest<- !grepl("Nothing found called", forest) && nchar(forest)>0
-  to_create_allotment<- !grepl("Nothing found called", allotment) && nchar(allotment)>0
-  to_create_pasture<- !grepl("Nothing found called", pasture) && nchar(pasture)>0
+  to_create_rd<- (!grepl("Nothing found called", ranger_district) && nchar(ranger_district)>0 &&
+                  !grepl(paste0(ranger_district, " was found in the last column, there is nothing to the right of it!"), ranger_district) &&
+                  !grepl(paste0(ranger_district, " was found in the last column, there is nothing to the left of it!"), ranger_district))
+  
+  to_create_forest<- (!grepl("Nothing found called", forest) && nchar(forest)>0 &&
+    !grepl(paste0(forest, " was found in the last column, there is nothing to the right of it!"), forest) &&
+    !grepl(paste0(forest, " was found in the last column, there is nothing to the left of it!"), forest))
+
+  to_create_allotment<- (!grepl("Nothing found called", allotment) && nchar(allotment)>0 &&
+    !grepl(paste0(allotment, " was found in the last column, there is nothing to the right of it!"), allotment) &&
+    !grepl(paste0(allotment, " was found in the last column, there is nothing to the left of it!"), allotment))
+
+  to_create_pasture<- (!grepl("Nothing found called", pasture) && nchar(pasture)>0 &&
+    !grepl(paste0(pasture, " was found in the last column, there is nothing to the right of it!"), pasture) &&
+    !grepl(paste0(pasture, " was found in the last column, there is nothing to the left of it!"), pasture))
   
   ## formatting names/labels
   pasture<- paste0(pasture," Pasture")
@@ -333,78 +372,97 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   ## creates folder under "local" folder - Default to Local
   parent<- paste0("X'11111111111111111111111111111111'")
   
-  ## ranger district if value
-  if (to_create_rd == TRUE) {
+  ## FOREST --------------------------------------------------------------------
+  ## if value exists
+  if (to_create_forest == TRUE) {
     ## check if folder exits already
     check<- folder_check %>% 
-      filter(ClassName == paste0(ranger_district))
+      filter(ClassName == paste0(forest))
     ## if it does not exist - then create
     if (nrow(check)==0) {
-      create_schema(ClassName = paste0("'",ranger_district,"'"), CK_ParentClass = parent, SitePK = "NULL")
+      ## update messages for function
+      print(paste0("Creating Forest Folder"))
+      create_schema(ClassName = paste0("'",forest,"'"), CK_ParentClass = parent, SitePK = "NULL")
     } ## if exists then leave as it...
+  } else(print(paste0("Forest Folder Already Exists")))
+  ## if blank
+  if (to_create_forest == FALSE) {
+    forest<- "Unknown Forest"
+    ## update messages for function
+    print(paste0("Creating Unknown Forest Folder"))
+    create_schema(ClassName = paste0("'",forest,"'"), CK_ParentClass = parent, SitePK = "NULL")
   }
-  ## ranger district if blank
-  if (to_create_rd == FALSE) {
-    ranger_district<- "Unknown Ranger District"
-    create_schema(ClassName = paste0("'",ranger_district,"'"), CK_ParentClass = parent, SitePK = "NULL")
-  }
+  ## END OF FOREST -------------------------------------------------------------
   
   ## query db for new siteClass folders
   folder_check<- dbGetQuery(mydb, siteClassCheck)
-  ## filter to parent
-  check_rd <- folder_check %>% 
-    filter(ClassName == paste0(ranger_district))
-  ## assign parent to current folder
-  parent<- check_rd$`quote(PK_SiteClass)`
   
-  ## forest if value
-  if (to_create_forest == TRUE) {
+  ## filter to parent
+  check_forest <- folder_check %>% 
+    filter(ClassName == paste0(forest))
+  ## assign parent to current folder
+  parent<- check_forest$`quote(PK_SiteClass)`
+  
+  ## RANGER DISTRICT------------------------------------------------------------
+  ## if value exists (TRUE)
+  if (to_create_rd == TRUE) {
     ## check if folder exits
     check<- folder_check %>% 
-      filter(ClassName == paste0(forest))
+      filter(ClassName == paste0(ranger_district))
+    ## filter parent has correct parent folder (ranger district)
+    check_2<- check %>% 
+      filter(`quote(CK_ParentClass)` == check_forest$`quote(PK_SiteClass)`)
     ## if it does not exist - then create
-    if (nrow(check)==0) {
-      create_schema(ClassName = paste0("'",forest,"'"), CK_ParentClass = parent, SitePK = "NULL")
-    } ## leave as is if not...
+    if (nrow(check_2)==0) {
+      ## update messages for function
+      print(paste0("Creating RD Folder"))
+      create_schema(ClassName = paste0("'",ranger_district,"'"), CK_ParentClass = parent, SitePK = "NULL")
+    } else(print(paste0("RD Folder Already Exists")))
   }
-  ## forest if blank
-  if (to_create_forest == FALSE) {
+  
+  ## if blank
+  if (to_create_rd == FALSE) {
     ## check if folder exits
-    forest<- "Unknown Forest"
+    forest<- "Unknown RD"
     ## check if folder exits
     check_u<- folder_check %>% 
-      filter(ClassName == paste0(forest))
+      filter(ClassName == paste0(ranger_district))
     ## filter parent has correct parent folder (ranger district)
     check_u2<- check_u %>% 
-      filter(`quote(CK_ParentClass)` == check_rd$`quote(PK_SiteClass)`)
+      filter(`quote(CK_ParentClass)` == check_forest$`quote(PK_SiteClass)`)
     ## only create if does not exist
     if (nrow(check_u2)==0) {
-      create_schema(ClassName = paste0("'",forest,"'"), CK_ParentClass = parent, SitePK = "NULL")
+      ## update messages for function
+      print(paste0("Creating Unknown RD Folder"))
+      create_schema(ClassName = paste0("'",ranger_district,"'"), CK_ParentClass = parent, SitePK = "NULL")
     }
   }
+  ## END OF RANGER DISTRICT ----------------------------------------------------
   
   ## query db for new siteClass folders
   folder_check<- dbGetQuery(mydb, siteClassCheck)
   ## parent
-  check_f <- folder_check %>% 
-    filter(ClassName == paste0(forest))
+  check_f<- folder_check %>% 
+    filter(ClassName == paste0(ranger_district))
   ## filter parent has correct parent folder (ranger district)
   check_f2<- check_f %>% 
-    filter(`quote(CK_ParentClass)` == check_rd$`quote(PK_SiteClass)`)
+    filter(`quote(CK_ParentClass)` == check_forest$`quote(PK_SiteClass)`)
   
   ## assign parent to current folder
   parent<- check_f2$`quote(PK_SiteClass)`
   
-  if (test_mode == "allotment") {
-    #check_rd<<- check_rd
-    parent<<- parent
-    check<<- check
-    forest<<- forest
-    allotment<<- allotment
-    folder_check<<- folder_check
-    stop("check allotment site insert...")
-  }
+  # if (test_mode == "allotment") {
+  #   #check_rd<<- check_rd
+  #   parent<<- parent
+  #   check<<- check
+  #   forest<<- forest
+  #   allotment<<- allotment
+  #   folder_check<<- folder_check
+  #   stop("check allotment site insert...")
+  # }
 
+  
+  ## ALLOTMENT -----------------------------------------------------------------
   ## allotment if value
   if (to_create_allotment == TRUE) {
     ## check if folder exits already
@@ -415,8 +473,10 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
       filter(`quote(CK_ParentClass)` == check_f2$`quote(PK_SiteClass)`)
     ## if it does not exist - then create
     if (nrow(check_2)==0) {
+      ## update messages for function
+      print(paste0("Creating Allotment Folder"))
       create_schema(ClassName = paste0("'",allotment,"'"), CK_ParentClass = parent, SitePK = "NULL")
-    } ## if exists, leave as is...
+    } else(print(paste0("Allotment Folder Already Exists")))
   }
   ## allotment if blank
   if (to_create_allotment == FALSE) {
@@ -429,35 +489,37 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
       filter(`quote(CK_ParentClass)` == check_f2$`quote(PK_SiteClass)`)
     ## only create if does not exist
     if (nrow(check_u2)==0) {
+      ## update messages for function
+      print(paste0("Creating Unknown Allotment Folder"))
       create_schema(ClassName = paste0("'",allotment,"'"), CK_ParentClass = parent, SitePK = "NULL")
     }
   }
+  ## END OF ALLOTMENT ----------------------------------------------------------
   
   ## query db for new siteClass folders
   folder_check<- dbGetQuery(mydb, siteClassCheck)
-  
   ## filter to parent
-  check_a<- folder_check %>% 
+  check<- folder_check %>% 
     filter(ClassName == paste0(allotment))
-
   ## filter parent has correct parent folder (allotment)
-  check_a2<- check_a %>% 
+  check_2<- check %>% 
     filter(`quote(CK_ParentClass)` == check_f2$`quote(PK_SiteClass)`)
 
   ## assign parent to current folder
-  parent<- check_a2$`quote(PK_SiteClass)`
+  parent<- check_2$`quote(PK_SiteClass)`
   
-  if (test_mode == "pasture") {
-    #check_rd<<- check_rd
-    parent<<- parent
-    check<<- check
-    forest<<- forest
-    allotment<<- allotment
-    ranger_district<<- ranger_district
-    folder_check<<- folder_check
-    stop("check pasture site insert...")
-  }
+  # if (test_mode == "pasture") {
+  #   #check_rd<<- check_rd
+  #   parent<<- parent
+  #   check<<- check
+  #   forest<<- forest
+  #   allotment<<- allotment
+  #   ranger_district<<- ranger_district
+  #   folder_check<<- folder_check
+  #   stop("check pasture site insert...")
+  # }
   
+  ## PASTURE -------------------------------------------------------------------
   ## pasture if value
   if (to_create_pasture == TRUE) {
     ## check if folder exits already
@@ -465,12 +527,17 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
       filter(ClassName == paste0(pasture))
     ## check if parent PK matches parent of current folder
     check_2<- check %>% 
-      filter(`quote(CK_ParentClass)` == check_a2$`quote(PK_SiteClass)`)
+      filter(`quote(CK_ParentClass)` == check_2$`quote(PK_SiteClass)`)
     ## if it does not exist - then create
     if (nrow(check_2)==0) {
+      ## update messages for function
+      print(paste0("Creating Pasture Folder and placing site"))
       create_schema(ClassName = paste0("'",pasture,"'"), CK_ParentClass = parent, SitePK = site_PK, PK_SiteClass = check_2$`quote(PK_SiteClass)`)
       ## if parent folder exists already, still need to put if correct folder
-      } else {update_schema(SitePK = site_PK, PK_SiteClass = check_2$`quote(PK_SiteClass)`)}
+    } else {print(paste0("Pasture Folder Already Exists"))
+            print(paste0("Placing Site in Folder"))
+            update_schema(SitePK = site_PK, PK_SiteClass = check_2$`quote(PK_SiteClass)`)
+            }
   }
   ## pasture if blank
   if (to_create_pasture == FALSE) {
@@ -479,22 +546,23 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
       filter(ClassName == paste0(pasture))
     ## check if parent PK matches parent of current folder
     check_u2<- check_u %>% 
-      filter(`quote(CK_ParentClass)` == check_a2$`quote(PK_SiteClass)`)
+      filter(`quote(CK_ParentClass)` == check_2$`quote(PK_SiteClass)`)
     ## if it does not exist - then create
     if (nrow(check_u2)==0) {
+      ## update messages for function
+      print(paste0("Creating Unkown Pasture Folder and placing site"))
       create_schema(ClassName = paste0("'",pasture,"'"), CK_ParentClass = parent, SitePK = site_PK, PK_SiteClass = check_u2$`quote(PK_SiteClass)`)
       ## if parent folder exists already, still need to put if correct folder
-    } else {update_schema(SitePK = site_PK, PK_SiteClass = check_u2$`quote(PK_SiteClass)`)}
+    } else {print(paste0("Placing Site in Folder"))
+            update_schema(SitePK = site_PK, PK_SiteClass = check_u2$`quote(PK_SiteClass)`)
+            }
   }
+  ## END OF PASTURE ------------------------------------------------------------
   ## end of folder creation
-  
-  ## placing site in correct folder (siteClassLink)
-  ## or add to schema function....
-  ## end of placing site into correct schema
   
   print("Finding Protocol in .db")
   ## Protocols Section
-  ## inserting protocol 1----------------------------
+  ## inserting protocol 1 -->
   
   PK_Protocol <- GUID()
   print(paste0("Making ", ProtocolName, " for - ", PK_Protocol))
@@ -514,10 +582,12 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   }
   
   ## check if found protocol - boots out of VGS
+  ## print message
+  if (length(FK_Type_Protocol) == 0) print(paste0(ProtocolName, " not in VGS -> import protocol first"))
+  ## stop app
   if (length(FK_Type_Protocol) == 0) stop(paste0(ProtocolName, " not in VGS -> import protocol first"))
   
   Attributes_raw <- TypeList_info$Attributes
-  ## end inserting protocol 1----------------------------
   
   ## variable manipulation -----------------------------------------------------
   if (EventNotes != "NULL") {
@@ -552,13 +622,13 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   ## log statment
   print(paste0("insert protocol"))
   
-  if (test_mode == "protocol") {
-    insert_protocol<<-insert_protocol
-    sink()
-    closeAllConnections()
-    print(insert_protocol)
-    stop("stop here to review")
-  }
+  # if (test_mode == "protocol") {
+  #   insert_protocol<<-insert_protocol
+  #   sink()
+  #   closeAllConnections()
+  #   print(insert_protocol)
+  #   stop("stop here to review")
+  # }
   
   ## insert protocol into protocol table
   dbExecute(mydb, insert_protocol)
@@ -609,7 +679,7 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
     # all_groupNames[i] <- gsub("&lt;", "<", all_groupNames[i], fixed = T)
     # all_groupNames[i] <- gsub("&gt;", ">", all_groupNames[i], fixed = T)
     # all_groupNames[i] <- gsub("[\r\n]", "", all_groupNames[i], fixed = T)
-    # all_groupNames[i] <- gsub("amp;", "", all_groupNames[i], fixed = T)
+    all_groupNames[i] <- gsub("amp;", "", all_groupNames[i], fixed = T)
     # all_groupNames[i] <- gsub("'", "", all_groupNames[i], fixed = T)
     
     
@@ -643,13 +713,13 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
       ## log statment
       print(paste0("insert event group to protocol"))
       
-      if (test_mode == "eventG") {
-        insert_eventGroup<<-insert_eventGroup
-        sink()
-        closeAllConnections()
-        print(insert_eventGroup)
-        stop("stop here to review")
-      }
+      # if (test_mode == "eventG") {
+      #   insert_eventGroup<<-insert_eventGroup
+      #   sink()
+      #   closeAllConnections()
+      #   print(insert_eventGroup)
+      #   stop("stop here to review")
+      # }
       
       ## insert eventGroups into eventGroup table
       dbExecute(mydb, insert_eventGroup)
@@ -762,13 +832,13 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
       ## log statment
       print(paste0("insert event to event group"))
 
-      if (test_mode == "events") {
-        insert_events<<-insert_events
-        sink()
-        closeAllConnections()
-        print(insert_eventGroup)
-        stop("stop here to review")
-      }
+      # if (test_mode == "events") {
+      #   insert_events<<-insert_events
+      #   sink()
+      #   closeAllConnections()
+      #   print(insert_eventGroup)
+      #   stop("stop here to review")
+      # }
       
       ## insert eventGroups into eventGroup table
       dbExecute(mydb, insert_events)
@@ -780,8 +850,9 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   
   ## update messages for function
   print(paste0("EventGroups and Events attached to ", ProtocolName))
+  ## End of protocol 1
   
-  ## inserting protocol, eventgroup, and events - 2 ----------------------------
+  ## inserting protocol, eventgroup, and events - 2 -->
   ## insert another protocol if needed (Example, RR needs Tally & Nested Freq)
   if (Protocol_2 != "NULL") {
     ## repeat as above with new protocol
@@ -801,6 +872,7 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
     }
     
     ## check if found protocol
+    if (length(FK_Type_Protocol) == 0) print(paste0(ProtocolName_2, " not in VGS -> import first"))
     if (length(FK_Type_Protocol) == 0) stop(paste0(ProtocolName_2, " not in VGS -> import first"))
     
     Attributes_raw <- TypeList_info$Attributes
@@ -837,13 +909,13 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
     ## log statment
     print(paste0("insert protocol"))
     
-    if (test_mode == "protocol_2") {
-      insert_protocol_2<<-insert_protocol_2
-      sink()
-      closeAllConnections()
-      print(insert_protocol_2)
-      stop("stop here to review")
-    }
+    # if (test_mode == "protocol_2") {
+    #   insert_protocol_2<<-insert_protocol_2
+    #   sink()
+    #   closeAllConnections()
+    #   print(insert_protocol_2)
+    #   stop("stop here to review")
+    # }
     
     ## insert protocol into protocol table
     dbExecute(mydb, insert_protocol_2)
@@ -893,7 +965,7 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
       # all_groupNames[i] <- gsub("&lt;", "<", all_groupNames[i], fixed = T)
       # all_groupNames[i] <- gsub("&gt;", ">", all_groupNames[i], fixed = T)
       # all_groupNames[i] <- gsub("[\r\n]", "", all_groupNames[i], fixed = T)
-      # all_groupNames[i] <- gsub("amp;", "", all_groupNames[i], fixed = T)
+      all_groupNames[i] <- gsub("amp;", "", all_groupNames[i], fixed = T)
       # all_groupNames[i] <- gsub("'", "", all_groupNames[i], fixed = T)
       
       ## query for protocol correct guid for PK_Protocol
@@ -1050,7 +1122,7 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   ## this section takes place only if 1st tab/page of xlsx or labeled as
   ## site meta data
   
-  if (test_mode == "data_page1") stop("stop here to check out raw data form")
+  #if (test_mode == "data_page1") stop("stop here to check out raw data form")
   
   ## Start of data inserting after protocols created -> gc data on site meta
   ## data page
@@ -1114,21 +1186,39 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     d <- 1
     while (d < nrow(data) + 1) {
       
-      ## alerts for app stoppages ----------------------------------------------
-      ## Species not in VGS .db species list = stop()
-      if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) {
-        shinyalert("Species Not in VGS!", paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect), type = "error")
-        Sys.sleep(15)
-      }
-      if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect))
+      ## message for data log for species in VGS check
+      if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect))
+      ## message for data log for species qualifier length
+      if (nchar(data[d, ][2]) > 20) print(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",data_file[batch_file]))
       
-      ## Check length of species qualifier = stop() if over 20 char
-      if (nchar(data[d, ][2]) > 20) {
-        shinyalert("Species Qualifier too long!", paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (>20) for belt#", Transect," - ",data_file[batch_file]), type = "error")
-        Sys.sleep(20)
-      }
-      if (nchar(data[d, ][2]) > 20) stop(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char)"))
-      ## end of checks to stop app for nested freq -----------------------------
+      ## stop app if not in Power Mode
+      if (power_mode == FALSE) {
+        ## alerts for app stoppages --------------------------------------------
+        ## Species not in VGS .db species list = stop()
+        if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) {
+          ## message for data log for species in VGS check
+          print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect))
+          ## alert for species
+          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect), type = "error")
+          Sys.sleep(15)
+        }
+        
+        if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect))
+        
+        ## Check length of species qualifier = stop() if over 20 char
+        ## print message for qualifier error
+        if (nchar(data[d, ][2]) > 20) print(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",data_file[batch_file]))
+        ## pop up warning
+        if (nchar(data[d, ][2]) > 20) {
+          shinyalert("Species Qualifier too long!", paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (>20) for belt#", Transect," - ",data_file[batch_file]), type = "error")
+          Sys.sleep(20)
+        }
+        ## stop app
+        if (nchar(data[d, ][2]) > 20) stop(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",data_file[batch_file]))
+        ## end of checks to stop app for nested freq ---------------------------
+      
+      } ## end of if in power mode 
+      
       
       ## for each species - format if Species Qualifier is not null
       if (data[d, ][2] != "NULL") {
@@ -1281,12 +1371,6 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
 ## end of insert data function -------------------------------------------------
 
 
-
-
-
-## in progress...
-
-
 ## insert statement to create folder schema for site and place site in folder
 create_schema <- function(ClassName,CK_ParentClass="NULL",SitePK,PK_SiteClass="NULL",FK_Species_SiteClass="NULL",ClassID="NULL",Description="NULL",SyncKey=33,SyncState=1) {
 
@@ -1305,6 +1389,10 @@ create_schema <- function(ClassName,CK_ParentClass="NULL",SitePK,PK_SiteClass="N
      VALUES
            (",PK_SiteClass,",",PK_SiteClass,",",FK_Species_SiteClass,",",CK_ParentClass,",",ClassID,",",ClassName,",",Description,",",SyncKey,",",SyncState,")")
     
+    ## test
+    see <<- insert_siteClass
+    
+
     ## insert siteClass
     dbExecute(mydb, insert_siteClass)
     

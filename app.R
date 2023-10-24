@@ -8,11 +8,17 @@ library(shinythemes)
 library(shinycssloaders)
 library(shinydashboard)
 library(shinyalert)
+library(shinyjs)
 library(DT)
+library(openxlsx)
+
+## read in xlsx file with USFS shapefile/naming info
+pasture_info<- openxlsx::read.xlsx("www/pasture_data.xlsx")
 
 ## test mode - TRUE to show DEV mode
-test_mode=TRUE
-#test_mode=FALSE
+#test_mode=TRUE
+test_mode=FALSE
+power_mode=TRUE
 
 ## -----------------------------------------------------------------------------
 ## Define UI 
@@ -43,9 +49,20 @@ ui <- fluidPage(
             selectInput(inputId = "devMode",
                         label = "Dev Mode Options",
                         choices = c(FALSE,"allotment","pasture","protocol","eventG","events","protocol_2","base","data_page1","wildcard")
-                        
             ))
         ## end of dev box for test mode
+      },
+      
+      ## if power mode
+      if (power_mode == TRUE) {
+        ## power mode will push through all species errors, will have to go back and
+        ## check log for errors! VGS events will be corrupt if errors occur on insert
+        box(width = '100%', solidHeader = F, collapsed = T,
+            selectInput(inputId = "powMode",
+                        label = "Power Mode?",
+                        choices = TRUE
+            ))
+        ## end of power mode
       }
       
     ), ## end of side bar panel
@@ -143,12 +160,22 @@ server <- function(input, output, session) {
                                first = nchar(data_log_output[nrow(data_log_output),])-24,
                                last = nchar(data_log_output[nrow(data_log_output),]))
       
-      ## first one is NULL so needs to check 2nd
-      ## if reaches final output in function - sucessful = got past function checks
-      if (status_check[2] == "**Batch Import Complete**") {
-        shinyalert("Niceee!", "**Batch Import Complete**", type = "success")
-      } else ## did not finish going through function for data import
-        shinyalert("Oops!", "Something went wrong. Check log table or file", type = "error")
+      ## if in power mode - different message
+      if (power_mode == TRUE) {
+        shinyalert("Finished (In Power Mode)", "Some data may be currupt, check log for errors", type = "warning")
+        print("Finished (In Power Mode): Some data may be currupt, check log for errors")
+      }
+      
+      ## only if not in power mode
+      if (power_mode == FALSE) {
+        ## first one is NULL so needs to check 2nd
+        ## if reaches final output in function - sucessful = got past function checks
+        if (status_check[2] == "**Batch Import Complete**") {
+          shinyalert("Niceee!", "**Batch Import Complete**", type = "success")
+        } else ## did not finish going through function for data import
+          shinyalert("Oops!", "Something went wrong. Check log table or file", type = "error")
+      }
+
       
       data_log_output
       
