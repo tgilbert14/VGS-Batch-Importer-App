@@ -69,8 +69,9 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     #cat("----->")
     
     print(paste0("Moving to File ", batch_file, " : ", data_file[batch_file]))
-    
-    shinyalert(paste0("Starting File #", batch_file), paste0(data_file[batch_file]),
+    f_name<- paste0(data_file[batch_file])
+    file_on<- basename(f_name)
+    shinyalert(paste0("Starting File #", batch_file), file_on,
                type = "success", timer = 2000, showConfirmButton = F)
     
     ## read specific batch file
@@ -1187,9 +1188,9 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     while (d < nrow(data) + 1) {
       
       ## message for data log for species in VGS check
-      if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect))
+      if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect," - ",file_on))
       ## message for data log for species qualifier length
-      if (nchar(data[d, ][2]) > 20) print(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",data_file[batch_file]))
+      if (nchar(data[d, ][2]) > 20) print(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",file_on))
       
       ## stop app if not in Power Mode
       if (power_mode == FALSE) {
@@ -1197,24 +1198,24 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
         ## Species not in VGS .db species list = stop()
         if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) {
           ## message for data log for species in VGS check
-          print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect))
+          print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect," - ",file_on))
           ## alert for species
-          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect), type = "error")
+          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect," - ",file_on), type = "error")
           Sys.sleep(15)
         }
         
-        if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect))
+        if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect," - ",file_on))
         
         ## Check length of species qualifier = stop() if over 20 char
         ## print message for qualifier error
-        if (nchar(data[d, ][2]) > 20) print(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",data_file[batch_file]))
+        if (nchar(data[d, ][2]) > 20) print(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",file_on))
         ## pop up warning
         if (nchar(data[d, ][2]) > 20) {
-          shinyalert("Species Qualifier too long!", paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (>20) for belt#", Transect," - ",data_file[batch_file]), type = "error")
+          shinyalert("Species Qualifier too long!", paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (>20) for belt#", Transect," - ",file_on), type = "error")
           Sys.sleep(20)
         }
         ## stop app
-        if (nchar(data[d, ][2]) > 20) stop(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",data_file[batch_file]))
+        if (nchar(data[d, ][2]) > 20) stop(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",file_on))
         ## end of checks to stop app for nested freq ---------------------------
       
       } ## end of if in power mode 
