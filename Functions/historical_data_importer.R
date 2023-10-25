@@ -9,6 +9,9 @@ library(DBI)
 library(RSQLite)
 library(stringr)
 
+## table to save added unique species for QA/QC
+species_added<<- data.frame(sp=character(),qualifier=character(),from=character())
+
 ## [[ 1st function ]]
 ## READ IMPORT DATA FUNCTION ---------------------------------------------------
 ## >This function reads in all excel tabs and saves them, sends them to next
@@ -70,7 +73,7 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     
     print(paste0("Moving to File ", batch_file, " : ", data_file[batch_file]))
     f_name<- paste0(data_file[batch_file])
-    file_on<- basename(f_name)
+    file_on<<- basename(f_name)
     shinyalert(paste0("Starting File #", batch_file), file_on,
                type = "success", timer = 2000, showConfirmButton = F)
     
@@ -106,7 +109,14 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     ## move to next batch file
     batch_file <<- batch_file + 1
     
+    ## saving species added for QA/QC ->
+    ## get unique values by site and arrange
+    sp_added<<- unique(species_added)
+    sp_added_final<<- sp_added %>% 
+      arrange(from, sp, qualifier)
     
+    write.xlsx(sp_added_final, paste0(app_path,"/www/Species_added_QAQC.xlsx"))
+
     if (batch_file == length(data_file) + 1) {
       print("**Batch Import Complete**")
     }
@@ -1186,6 +1196,12 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     
     d <- 1
     while (d < nrow(data) + 1) {
+ 
+      ## gather each species and qualifier and track so we can QA/QC species being added
+      sp<<- data[d, ][[1]]
+      qualifier<<- data[d, ][2]
+      temp_table<<- data.frame(sp=paste0(sp),qualifier=paste0(qualifier),from=paste0(file_on))
+      species_added<<- rbind(species_added, temp_table)
       
       ## message for data log for species in VGS check
       if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect," - ",file_on))
@@ -1389,10 +1405,6 @@ create_schema <- function(ClassName,CK_ParentClass="NULL",SitePK,PK_SiteClass="N
            SyncState)
      VALUES
            (",PK_SiteClass,",",PK_SiteClass,",",FK_Species_SiteClass,",",CK_ParentClass,",",ClassID,",",ClassName,",",Description,",",SyncKey,",",SyncState,")")
-    
-    ## test
-    see <<- insert_siteClass
-    
 
     ## insert siteClass
     dbExecute(mydb, insert_siteClass)

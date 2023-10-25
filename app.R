@@ -1,6 +1,6 @@
 ## set environment path
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-app_path<-getwd()
+app_path<<-getwd()
 
 ## global - libraries
 library(shiny)
@@ -173,9 +173,9 @@ server <- function(input, output, session) {
         ## first one is NULL so needs to check 2nd
         ## if reaches final output in function - sucessful = got past function checks
         if (status_check[2] == "**Batch Import Complete**") {
-          shinyalert("Niceee!", "**Batch Import Complete**", type = "success")
+          shinyalert("Niceee!", "**Batch Import Complete**", type = "success", closeOnClickOutside = F)
         } else ## did not finish going through function for data import
-          shinyalert("Oops!", "Something went wrong. Check log table or file", type = "error")
+          shinyalert("Oops!", "Something went wrong. Check log table or file", type = "error", closeOnClickOutside = F)
       }
 
       
