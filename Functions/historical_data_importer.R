@@ -22,6 +22,15 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
   db_loc <- "C:/ProgramData/VGSData/VGS50.db"
   ## connecting to VGS database
   mydb <- dbConnect(RSQLite::SQLite(), dbname = db_loc)
+  
+  ## get species list from database
+  vgs_species_list_q <- paste0("SELECT PK_Species from Species where List = 'NRCS'")
+  vgs_species_list <- dbGetQuery(mydb, vgs_species_list_q)
+  
+  ## get full species list from database
+  vgs_species_list_q2 <- paste0("SELECT PK_Species,SpeciesName, CommonName from Species where List = 'NRCS'")
+  vgs_species_list_more <- dbGetQuery(mydb, vgs_species_list_q2)
+  
   ## Save to parent environment for later
   ServerKey <<- ServerKey
   Protocol <<- Protocol
@@ -91,11 +100,11 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     active_sheets <<- active_sheets
     ## go through each sheet 'x'
     x <<- 1
+    
     while (x < length(historical_data) + 1) {
       ## get all info from each excel sheet -> Reading one sheet at a time
       data_import <<- historical_data[[x]]
-      # View(data_import)
-      
+
       ## function for key info and data import
       batch_import(historical_raw_data = data_import)
       ## move site to correct folder or create parent folders
@@ -147,9 +156,11 @@ batch_import <<- function(historical_raw_data) {
   ## only does this is there is site meta data
   ## if it is the first sheet/tab or it is a specific sheet tab name "Site Metadata",etc...
   SiteCheck_R6_RR<- active_sheets[x] == "SiteMetaData"
+  ## meta data is on Nested Freq sheet for these specific ones
   SiteCheck_R4_BT<- active_sheets[x] == "Nested Frequency Line 1"
   
-  if (SiteCheck_R6_RR == TRUE) {
+  ## THIS SECTION IS FOR META-DATA/FOLDER CREATION/SITE CREATION/LOCATORS -->
+  if (SiteCheck_R6_RR == TRUE || SiteCheck_R4_BT == TRUE) {
     print(paste0("Reading ", active_sheets[x]))
     print(paste0("Found SiteData info for file ", batch_file, " -> ", active_sheets[x]))
     print(paste0("Identifying keys for ", active_sheets[x]))
@@ -210,7 +221,6 @@ batch_import <<- function(historical_raw_data) {
   
   ## OTHER TABS ---- other than the first and not "site Meta Data" tabs
   ## if not site meta data of on site metadata page
-  ## works for RR so far... ?
   if (x != 1) {
     
     print(paste0("Moving to ", active_sheets[x]))
@@ -222,8 +232,8 @@ batch_import <<- function(historical_raw_data) {
       base::source("scripts/USFS R6/R6_RR_freq.R")
     }
     ## BTNF key
-    if (ServerKey == "USFS R4-BT") {
-      ## not done yet...
+    if (ServerKey == "USFS R4-BT" && SiteCheck_R4_BT == TRUE) {
+      ## insert freq and ground cover
       base::source("scripts/USFS R4/R4_BT.R")
     }
     ## NRCS AZ
@@ -1180,11 +1190,11 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
   # SyncKey <- 33
   # SyncState <- 1
   
-  ## get species list from database
-  vgs_species_list_q <- paste0("SELECT PK_Species from Species where List = 'NRCS'")
-  
-  vgs_species_list <- dbGetQuery(mydb, vgs_species_list_q)
-  # View(vgs_species_list)
+  ## moved higher up in script -->
+  # ## get species list from database
+  # vgs_species_list_q <- paste0("SELECT PK_Species from Species where List = 'NRCS'")
+  # 
+  # vgs_species_list <- dbGetQuery(mydb, vgs_species_list_q)
   
   ## If Nested Freq - reset values for insert for that specific method
   if (method == "NF") {
