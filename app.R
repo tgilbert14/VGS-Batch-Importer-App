@@ -144,6 +144,9 @@ server <- function(input, output, session) {
     source(paste0(app_path,"/Functions/historical_data_importer.R"), local = T)
     read_import_data(Protocol = input$Protocol, ServerKey = input$ServerKey, Protocol_2 = input$Protocol_2)
     
+    ## pop up for species errors in VGS
+    source(paste0(app_path,"/Functions/species_qaqc_check.R"), local = T)
+    
     ## close connections from local VGS db
     DBI::dbDisconnect(mydb)
     closeAllConnections()

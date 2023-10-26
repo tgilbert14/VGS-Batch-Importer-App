@@ -47,12 +47,13 @@ if (length(grep("Nested Frequency", active_sheets[x]))==1) {
     ## not doing this...
     ## get rid of rows if have a species but has no hits (sum of zero for freq)
     ##nest_freq_ready <- nf_data %>% filter(nf_data$...25 != 0)
-    # View(nest_freq_ready)
+    #View(nest_freq_ready)
     
     ## inserting columns for Qualifier/species/common name
     nf_data_and_q<- add_column(nf_data, qualifier = "NULL", .after = 1)
     ## adding blank common names
     nf_data_and_common<- add_column(nf_data_and_q, commonName = "", .after = 3)
+    
     ## go through each row and update species name and common name
     move<- 1
     while (move < nrow(nf_data_and_common)+1) {
@@ -66,12 +67,21 @@ if (length(grep("Nested Frequency", active_sheets[x]))==1) {
       ## if could not find by code, try search by species
       if (length(find) == 0) {
         find<- grep(paste0("^",nf_data_and_common[[3]][move],"$"),vgs_species_list_more$SpeciesName)
-        ## updated names from VGS .db
-        new_sp_name<- vgs_species_list_more[find,]$SpeciesName
-        new_common_name<- vgs_species_list_more[find,]$CommonName
+        ## if still nothing...
+        if (length(find) == 0) {
+          ## stop/error/alert if species not found
+          print(paste0(nf_data_and_common[[1]][move]," - ",nf_data_and_common[[3]][move]," not found in VGS!"))
+          new_sp_name<- "No species name found"
+          new_common_name<- "No common name found"
+        } else {
+          ## updated names from VGS .db
+          new_sp_name<- vgs_species_list_more[find,]$SpeciesName
+          new_common_name<- vgs_species_list_more[find,]$CommonName
+          }
+        
       }
       ## if is na -> use original 'find' for code search
-      if (is.na(new_sp_name)) {
+      if (is.na(new_sp_name)  || length(is.na(new_sp_name))==0) {
         ## updated names from VGS .db
         new_sp_name<- vgs_species_list_more[find,]$SpeciesName
         new_common_name<- vgs_species_list_more[find,]$CommonName
@@ -87,7 +97,7 @@ if (length(grep("Nested Frequency", active_sheets[x]))==1) {
     }
     
     nest_freq_ready<- nf_data_and_common
-    View(nest_freq_ready)
+    #View(nest_freq_ready)
     
     ## searching for specific term for specific protocol
     term <- "BTNF Range Monitoring"

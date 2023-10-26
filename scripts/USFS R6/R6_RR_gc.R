@@ -45,16 +45,14 @@ if (nrow(gc_data) > 0) {
   gc_ready <- gc_data %>% filter(gc_data$...5 != 0)
   # View(gc_ready)
   
+
   ## Update categories to PK_Species/Fk_Species/Field Symbol
   gc_ready$...4[gc_ready$...4 == "Litter"] <- "G_LITT"
   gc_ready$...4[gc_ready$...4 == "Rock"] <- "G_ROCK3"
   gc_ready$...4[gc_ready$...4 == "Vegetation"] <- "G_VEGE"
-  gc_ready$...4[gc_ready$...4 == "Pavement"] <- "G_$QGJSWR6KN5"
-  gc_ready$...4[gc_ready$...4 == "Moss"] <- "G_MOSS"
-  gc_ready$...4[gc_ready$...4 == "Soil"] <- "G_$YKLSYQARFV"
-  
-  ## update to be in regular protocol (not tally)
-  
+  gc_ready[gc_ready == "Pavement"] <- "G_$QGJSWR6KN5"
+  gc_ready[gc_ready == "Moss"] <- "G_MOSS"
+  gc_ready[gc_ready == "Soil"] <- "G_$YKLSYQARFV"
   
   ## insert gc data
   insert_data(data = gc_ready, method = "GC-tally", FK_Event = checked_PK_Event, SyncKey = 33, SyncState = 1)
