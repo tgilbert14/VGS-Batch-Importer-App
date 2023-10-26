@@ -25,11 +25,11 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
   
   ## get species list from database
   vgs_species_list_q <- paste0("SELECT PK_Species from Species where List = 'NRCS'")
-  vgs_species_list <- dbGetQuery(mydb, vgs_species_list_q)
+  vgs_species_list <<- dbGetQuery(mydb, vgs_species_list_q)
   
   ## get full species list from database
   vgs_species_list_q2 <- paste0("SELECT PK_Species,SpeciesName, CommonName from Species where List = 'NRCS'")
-  vgs_species_list_more <- dbGetQuery(mydb, vgs_species_list_q2)
+  vgs_species_list_more <<- dbGetQuery(mydb, vgs_species_list_q2)
   
   ## Save to parent environment for later
   ServerKey <<- ServerKey
@@ -79,10 +79,11 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
   while (batch_file < length(data_file) + 1) {
     print(" ")
     #cat("----->")
-    
-    print(paste0("Moving to File ", batch_file, " : ", data_file[batch_file]))
     f_name<- paste0(data_file[batch_file])
     file_on<<- basename(f_name)
+    
+    print(paste0("Moving to File ", batch_file, " : ",file_on))
+
     shinyalert(paste0("Starting File #", batch_file), file_on,
                type = "success", timer = 2000, showConfirmButton = F)
     
@@ -209,7 +210,7 @@ batch_import <<- function(historical_raw_data) {
     }
     ## End of variable manipulation
     
-    print(paste0("Inserting ", active_sheets[x]))
+    print(paste0("Inserting data from ", active_sheets[x]))
     
     ## create site and data event
     create_site(
@@ -223,7 +224,7 @@ batch_import <<- function(historical_raw_data) {
   ## if not site meta data of on site metadata page
   if (x != 1) {
     
-    print(paste0("Moving to ", active_sheets[x]))
+    print(paste0("Moving to/checking ", active_sheets[x]))
     
     ## RR key - nested freq - check protocols as well
     if (ServerKey == "USFS R6-RR" && 
@@ -231,11 +232,13 @@ batch_import <<- function(historical_raw_data) {
       ## inserting freq data
       base::source("scripts/USFS R6/R6_RR_freq.R")
     }
+    
     ## BTNF key
-    if (ServerKey == "USFS R4-BT" && SiteCheck_R4_BT == TRUE) {
+    if (ServerKey == "USFS R4-BT") {
       ## insert freq and ground cover
       base::source("scripts/USFS R4/R4_BT.R")
     }
+    
     ## NRCS AZ
     if (ServerKey == "NRCS AZ") {
       ## not done yet...
@@ -1344,19 +1347,13 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
   }
   
   ## If Ground Cover - reset values for insert for that specific method
-  if (method == "GC") {
+  if (method == "GC-tally") {
     # data<- gc_ready
+    
     ## setting variables for tally insert
     Transect <- 1
     SampleNumber <- 1
     Element <- 0
-    ## Update categories to PK_Species/Fk_Species/Field Symbol
-    data$...4[data$...4 == "Litter"] <- "G_LITT"
-    data$...4[data$...4 == "Rock"] <- "G_ROCK3"
-    data$...4[data$...4 == "Vegetation"] <- "G_VEGE"
-    data$...4[data$...4 == "Pavement"] <- "G_$QGJSWR6KN5"
-    data$...4[data$...4 == "Moss"] <- "G_MOSS"
-    data$...4[data$...4 == "Soil"] <- "G_$YKLSYQARFV"
     
     d <- 1
     while (d < nrow(data) + 1) {
@@ -1392,8 +1389,62 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
       d <- d + 1
     }
     
+    print("GC tally inserted...")
+  }
+  
+  ## If Ground Cover - reset values for insert for that specific method
+  if (method == "GC") {
+    # data<- hi2
+    
+    ## setting variables -->
+    ## Goes through each belt (Transect)
+    Transect <- belt_num
+    ## 20 per Transect
+    SampleNumber <- sort.int(rep(c(1:20),4))
+    ## 4 per Sample
+    Element <- rep(c(1:4),20)
+    ## randomize ground cover list
+    gc_random<- sample(hi2)
+    
+    d <- 1
+    while (d < length(data) + 1) {
+      PK_Sample <- GUID()
+      
+      insert_sample <- paste0("INSERT INTO Sample
+           (PK_Sample
+           ,FK_Event
+           ,FK_Species
+           ,Transect
+           ,SampleNumber
+           ,Element
+           ,SubElement
+           ,FieldSymbol
+           ,SpeciesQualifier
+           ,FieldQualifier
+           ,cParameter
+           ,cParameter2
+           ,cParameter3
+           ,nValue
+           ,nValue2
+           ,nValue3
+           ,cValue
+           ,cValue2
+           ,cValue3
+           ,SyncKey
+           ,SyncState)
+     VALUES
+           (", PK_Sample, ",", FK_Event, ",'", gc_random[d], "',", Transect, ",", SampleNumber[d], ",", Element[d], ",", SubElement, ",'", gc_random[d], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
+      
+      test<<- insert_sample
+      
+      ## insert GC data
+      dbExecute(mydb, insert_sample)
+      d <- d + 1
+    }
+    
     print("GC inserted...")
   }
+  
 }
 ## end of insert data function -------------------------------------------------
 

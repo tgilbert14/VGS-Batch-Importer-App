@@ -27,7 +27,8 @@ if (length(site_notes) == 0 || is.na(site_notes)) {
 }
 
 ## no event notes for now
-EventNotes <<- "NULL"
+#EventNotes <<- "NULL"
+EventNotes <<- "This data was imported into VGS from summary data sheets; Point Ground Cover totals reflects real total but it is not known on what transect they occurred."
 
 ## LOCATOR TABLE -->
 # lat <- find_label(historical_raw_data, "Latitude/Northing", location = "below")

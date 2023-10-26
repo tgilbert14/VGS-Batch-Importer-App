@@ -13,7 +13,7 @@ library(DT)
 library(openxlsx)
 
 ## read in xlsx file with USFS shapefile/naming info
-pasture_info<- openxlsx::read.xlsx("www/pasture_data.xlsx")
+pasture_info<<- openxlsx::read.xlsx("www/pasture_data.xlsx")
 
 ## test mode - TRUE to show DEV mode
 #test_mode=TRUE
