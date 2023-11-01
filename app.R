@@ -19,8 +19,8 @@ pasture_info<<- openxlsx::read.xlsx("www/pasture_data.xlsx")
 #test_mode=TRUE
 test_mode=FALSE
 ## power mode will push past species insert error but reference them in output.log
-#power_mode=TRUE
-power_mode=FALSE
+power_mode=TRUE
+#power_mode=FALSE
 
 ## -----------------------------------------------------------------------------
 ## Define UI 

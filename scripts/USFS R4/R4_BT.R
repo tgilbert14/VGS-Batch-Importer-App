@@ -15,7 +15,7 @@ if (length(grep("Nested Frequency", active_sheets[x]))==1) {
   print(paste0("Parsing Data for Nested Freq..."))
   
   ## look for species label
-  find_label(search_term = "Symbol",data = historical_raw_data, location="below")
+  #find_label(search_term = "Symbol",data = historical_raw_data, location="below")
   
   find_sp_data_col<- grep("Symbol",historical_raw_data)
   raw_data<- historical_raw_data[,find_sp_data_col]
@@ -29,11 +29,14 @@ if (length(grep("Nested Frequency", active_sheets[x]))==1) {
   nf_data<- freq_data_raw %>% 
     filter(!is.na(freq_data_raw[1]))
   
-  belt_num <- as.numeric(substr(active_sheets[x], nchar(active_sheets[x]), nchar(active_sheets[x])))
+  trim_sheet_name<- trimws(active_sheets[x])
+  #(substr(active_sheets[x], nchar(active_sheets[x]), nchar(active_sheets[x])))
+  belt_num <- as.numeric(substr(trim_sheet_name, nchar(trim_sheet_name), nchar(trim_sheet_name)))
   
   if (nrow(nf_data) == 0) {
     print(paste0("No Nested Freq for this Belt ", belt_num))
   }
+  #View(nf_data)
   
   ## only insert if data present
   if (nrow(nf_data) > 0) {
@@ -199,3 +202,4 @@ EventName = 'Frequency (by quadrat)'")
     insert_data(data = hi2, method = "GC", FK_Event = checked_PK_Event, SyncKey = 33, SyncState = 1)
   }
 } ## End of nested freq tabs
+

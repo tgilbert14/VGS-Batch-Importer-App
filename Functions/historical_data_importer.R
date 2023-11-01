@@ -47,7 +47,7 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     shinyalert("No Data Selected", "Refresh the page and choose a file!",
                imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
                imageWidth = 100, imageHeight = 100, type = "error", 
-               timer = 2500)
+               timer = 3500)
     ## wait 5 seconds, then stop the script
     Sys.sleep(5)
     stop(paste0("No Data Selected - Choose a file!"))
@@ -59,7 +59,7 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     shinyalert("...is crunching your data now", "Please wait, looking for data keys",
                imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
                imageWidth = 100, imageHeight = 100, type = "success", closeOnClickOutside = T,
-               showConfirmButton = F,timer = 2600)
+               showConfirmButton = F,timer = 3500)
   }
   ## if IN Power Mode
   if (power_mode == TRUE) {
@@ -67,7 +67,7 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     shinyalert("...is running in POWER MODE", "All data will try to be forced into the VGS database",
                imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
                imageWidth = 100, imageHeight = 100, type = "success", closeOnClickOutside = T,
-               showConfirmButton = F,timer = 2600)
+               showConfirmButton = F,timer = 3500)
   }
   
 
@@ -85,10 +85,11 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     print(paste0("Moving to File ", batch_file, " : ",file_on))
 
     shinyalert(paste0("Starting File #", batch_file," out of ",length(data_file)), file_on,
-               type = "success", timer = 3200, showConfirmButton = F)
+               type = "success", timer = 3500, showConfirmButton = F)
     
     ## read specific batch file
     active_sheets <- excel_sheets(data_file[batch_file])
+    
     ## don't care about VGS species list tab / ref sheets
     active_sheets <- active_sheets[active_sheets != "VGSDefaultSpeciesList"]
     active_sheets <- active_sheets[active_sheets != "Species Richness"]
@@ -124,13 +125,16 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     sp_added<<- unique(species_added)
     sp_added_final<<- sp_added %>% 
       arrange(from, sp, qualifier)
-    
-    write.xlsx(sp_added_final, paste0(app_path,"/www/Species_added_QAQC.xlsx"))
 
     if (batch_file == length(data_file) + 1) {
       print("**Batch Import Complete**")
     }
+
   }
+  ## create species added final for QA QC
+  time<- substr(Sys.time(),0,nchar(Sys.time())-3)
+  write.xlsx(sp_added_final, paste0(app_path,"/www/Species_added_QAQC_",time,".xlsx"))
+  
   DBI::dbDisconnect(mydb)
   closeAllConnections()
 }
@@ -154,11 +158,11 @@ batch_import <<- function(historical_raw_data) {
   ## separate key data out by chunks -> alter to find specific keys for batch import
   ## alter the grep "pattern" in quotes to help find correct rows
   
-  ## only does this is there is site meta data
+  ## only does this is there is site meta data - formatting to all uppercase to check
   ## if it is the first sheet/tab or it is a specific sheet tab name "Site Metadata",etc...
-  SiteCheck_R6_RR<- active_sheets[x] == "SiteMetaData"
+  SiteCheck_R6_RR<- toupper(active_sheets[x]) == toupper("SiteMetaData")
   ## meta data is on Nested Freq sheet for these specific ones
-  SiteCheck_R4_BT<- active_sheets[x] == "Nested Frequency Line 1"
+  SiteCheck_R4_BT<- toupper(active_sheets[x]) == toupper("Nested Frequency Line 1")
   
   ## THIS SECTION IS FOR META-DATA/FOLDER CREATION/SITE CREATION/LOCATORS -->
   if (SiteCheck_R6_RR == TRUE || SiteCheck_R4_BT == TRUE) {
@@ -1259,11 +1263,18 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
         data[d, ][2] <- paste0("'", data[d, ][2], "'")
       }
       
+      # !is.na(sample_data[1,8])
+      # sample_data
+      # View(nest_freq_ready)
+      
       ## each col / sample (starts at column 5)
       s <- 1
       while (s < ncol(sample_data) + 1) {
         if (!is.na(sample_data[d, s])) {
           PK_Sample <- GUID()
+          
+          ## trim white space for numbers
+          Element<- as.numeric(str_trim(sample_data[d, s]))
           
           insert_sample <- paste0("INSERT INTO Sample
            (PK_Sample
@@ -1288,7 +1299,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
            ,SyncKey
            ,SyncState)
      VALUES
-           (", PK_Sample, ",", FK_Event, ",'", toupper(data[d, ][[1]]), "',", Transect, ",", s, ",", as.numeric(sample_data[d, s]), ",", SubElement, ",'", toupper(data[d, ][[1]]), "',", data[d, ][2], ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
+           (", PK_Sample, ",", FK_Event, ",'", toupper(data[d, ][[1]]), "',", Transect, ",", s, ",", Element, ",", SubElement, ",'", toupper(data[d, ][[1]]), "',", data[d, ][2], ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
           
           ## insert NF data
           dbExecute(mydb, insert_sample)
@@ -1338,6 +1349,9 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
      VALUES
            (", PK_Sample, ",", FK_Event, ",'SYS_NONE',", Transect, ",", s, ",1,", SubElement, ",'SYS_NONE',NULL,", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
         
+        ## testing
+        see_me<<- insert_sample
+        
         ## insert NF data
         dbExecute(mydb, insert_sample)
       }
@@ -1358,6 +1372,9 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     d <- 1
     while (d < nrow(data) + 1) {
       PK_Sample <- GUID()
+      
+      ## trim white space for numbers
+      nValue<- as.numeric(str_trim(data[d, ][[2]]))
       
       insert_sample <- paste0("INSERT INTO Sample
            (PK_Sample
@@ -1382,7 +1399,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
            ,SyncKey
            ,SyncState)
      VALUES
-           (", PK_Sample, ",", FK_Event, ",'", data[d, ][[1]], "',", Transect, ",", SampleNumber, ",", Element, ",", SubElement, ",'", data[d, ][[1]], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",", data[d, ][[2]], ",", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
+           (", PK_Sample, ",", FK_Event, ",'", data[d, ][[1]], "',", Transect, ",", SampleNumber, ",", Element, ",", SubElement, ",'", data[d, ][[1]], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",", nValue, ",", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
       
       ## insert GC data
       dbExecute(mydb, insert_sample)

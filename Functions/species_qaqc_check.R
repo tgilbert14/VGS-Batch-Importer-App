@@ -7,7 +7,9 @@ names(sp_conflicts)[1]<- "Species errors in VGS"
 if (nrow(sp_conflicts) == 0) {
   sp_conflicts<- "No species conflicts found"
 }
-write.xlsx(sp_conflicts, paste0(app_path,"/www/r_sp_conflicts.xlsx"))
+
+time<- substr(Sys.time(),0,nchar(Sys.time())-3)
+write.xlsx(sp_conflicts, paste0(app_path,"/www/r_sp_conflicts_",time,".xlsx"))
 ## open file
-file.show(paste0(app_path,"/www/r_sp_conflicts.xlsx"))
+file.show(paste0(app_path,"/www/r_sp_conflicts_",time,".xlsx"))
 #file.show(paste0(app_path,"/www/r_output.txt"))

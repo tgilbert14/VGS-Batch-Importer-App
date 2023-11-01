@@ -43,12 +43,13 @@ zone <- NA
 ## to make more readable -->
 name<- basename(data_file[batch_file])
 full_site_name<- substr(name,0,nchar(name)-5)
+site_name <<- full_site_name
 
 ## get final site name
-find_dash<- gregexpr(pattern = "-",text = full_site_name)[[1]]
-len_dash<- length(find_dash)
-loc_last_dash<- find_dash[[len_dash]]
-site_name <<- substr(full_site_name,loc_last_dash+1,nchar(full_site_name))
+# find_dash<- gregexpr(pattern = "-",text = full_site_name)[[1]]
+# len_dash<- length(find_dash)
+# loc_last_dash<- find_dash[[len_dash]]
+# site_name <<- substr(full_site_name,loc_last_dash+1,nchar(full_site_name))
 
 ## Get entire numeric name to compare -->
 usfs_code<- substr(full_site_name,1,18)
