@@ -198,10 +198,18 @@ EventName = 'Frequency (by quadrat)'")
     dbExecute(mydb, update_event_notes)
   }
   
+  ## setting variables -->
+  ## 20 per Transect
+  SampleNumber_raw <- sort.int(rep(c(1:20),4))
+  ## 4 per Sample
+  Element_raw <- rep(c(1:4),20)
+  belt_num_raw<- rep(belt_num, 80)
   ## only insert if data present
   if (length(hi2) > 0) {
     ## insert gc data
-    insert_data(data = hi2, method = "GC", FK_Event = checked_PK_Event, SyncKey = 33, SyncState = 1)
+    insert_data(data = hi2, method = "GC", SampleNumber = SampleNumber_raw, 
+                Element = Element_raw, Transect = belt_num_raw, 
+                FK_Event = checked_PK_Event, SyncKey = 33, SyncState = 1)
   }
 } ## End of nested freq tabs
 

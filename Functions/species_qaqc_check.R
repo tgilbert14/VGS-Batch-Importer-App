@@ -14,3 +14,11 @@ write.xlsx(sp_conflicts, paste0(app_path,"/www/r_sp_conflicts_",time,".xlsx"))
 ## open file
 file.show(paste0(app_path,"/www/r_sp_conflicts_",time,".xlsx"))
 #file.show(paste0(app_path,"/www/r_output.txt"))
+
+## GC counts
+file_sum<- unique(qaqc[grep("Moving to File", qaqc[[1]]),])
+gc_sum<- unique(qaqc[grep("ground cover points found", qaqc[[1]]),])
+gc_check<- rbind(file_sum,gc_sum)
+write.xlsx(gc_check, paste0(app_path,"/www/gc_counts_",time,".xlsx"))
+## open file
+file.show(paste0(app_path,"/www/gc_counts_",time,".xlsx"))

@@ -40,7 +40,7 @@ pasture_info<<- openxlsx::read.xlsx("www/pasture_data.xlsx")
 ui <- fluidPage(
   
   ## general theme
-  theme = shinytheme("flatly"),
+  theme = shinytheme("sandstone"),
 
   titlePanel("Historical Data Importer"),
   
@@ -50,7 +50,7 @@ ui <- fluidPage(
       ## inputs for side dashboard
       shiny::selectInput(inputId = "Protocol", label = "Select Protocol for Import",
                          choices = c(" "="NULL",
-                                     "USFS R6 Rogue River - Tally",
+                                     #"USFS R6 Rogue River - Tally",
                                      "USFS R6 Rogue River Standard",
                                      "USFS R4 BTNF Range Monitoring"),
                          multiple = F, selected = F),
@@ -117,7 +117,8 @@ server <- function(input, output, session) {
         filter_keys <- c("Rogue River-Siskiyou National Forests"="USFS R6-RR")
       }
       if (input$Protocol == "USFS R6 Rogue River Standard") {
-        p2 <- c("USFS R6 Rogue River - Tally", "NA"="NULL")
+        #p2 <- c("USFS R6 Rogue River - Tally", "NA"="NULL")
+        p2 <- c("No"="NULL")
         filter_keys <- c("Rogue River-Siskiyou National Forests"="USFS R6-RR")
       }
       if (input$Protocol == "USFS R4 BTNF Range Monitoring") {
