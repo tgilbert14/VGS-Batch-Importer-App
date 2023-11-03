@@ -1,3 +1,23 @@
+## General Workflow ->
+## Run as 'power_mode=TRUE' first to generate species errors that need to be
+## fixed. File is generated in 'www' folder as...
+##
+##
+##
+
+## After all fixes have taken place -> Run in 'power_mode=FALSE' which has various
+## QA/QC checks. Must run through all batch data at once with no errors to work.
+
+
+## power mode will push past species insert error but reference them in output.log
+#power_mode=TRUE
+power_mode=FALSE
+
+## test mode - TRUE to show DEV mode
+#test_mode=TRUE
+test_mode=FALSE
+
+
 ## set environment path
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 app_path<<-getwd()
@@ -14,13 +34,6 @@ library(openxlsx)
 
 ## read in xlsx file with USFS shapefile/naming info
 pasture_info<<- openxlsx::read.xlsx("www/pasture_data.xlsx")
-
-## test mode - TRUE to show DEV mode
-#test_mode=TRUE
-test_mode=FALSE
-## power mode will push past species insert error but reference them in output.log
-power_mode=TRUE
-#power_mode=FALSE
 
 ## -----------------------------------------------------------------------------
 ## Define UI 

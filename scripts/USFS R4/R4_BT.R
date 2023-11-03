@@ -44,14 +44,16 @@ if (length(grep("Nested Frequency", active_sheets[x]))==1) {
     nf_data <- as.data.frame(nf_data)
     ## row 2 = Qualifiers(SpeciesQ/FieldQ) -> NA should be NULL
     nf_data[, 2][is.na(nf_data[, 2])] <- "NULL"
-    ## change all 4's to 0's -> 0 means it is in the largest frame
+    ## change all 0's to NA (specific to this data)
+    nf_data[nf_data == 0] <- NA
+    ## then change all 4's to 0's -> 0 means it is in the largest frame
     nf_data[nf_data == 4] <- 0
     
     ## not doing this...
     ## get rid of rows if have a species but has no hits (sum of zero for freq)
     ##nest_freq_ready <- nf_data %>% filter(nf_data$...25 != 0)
     #View(nest_freq_ready)
-    
+    file_on
     ## inserting columns for Qualifier/species/common name
     nf_data_and_q<- add_column(nf_data, qualifier = "NULL", .after = 1)
     ## adding blank common names

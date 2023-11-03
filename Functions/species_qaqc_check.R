@@ -2,7 +2,8 @@
 qaqc<-read_csv(paste0(app_path,"/www/r_output.txt"))
 #View(qaqc)
 
-sp_conflicts<- unique(qaqc[grep("Species", qaqc$`[1] " "`),])
+sp_conflicts<- unique(qaqc[grep("Species", qaqc[[1]]),])
+
 names(sp_conflicts)[1]<- "Species errors in VGS"
 if (nrow(sp_conflicts) == 0) {
   sp_conflicts<- "No species conflicts found"

@@ -77,7 +77,6 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
   ## go through each batch file
   batch_file <<- 1
   while (batch_file < length(data_file) + 1) {
-    print(" ")
     #cat("----->")
     f_name<- paste0(data_file[batch_file])
     file_on<<- basename(f_name)
@@ -89,7 +88,7 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     
     ## read specific batch file
     active_sheets <- excel_sheets(data_file[batch_file])
-    
+
     ## don't care about VGS species list tab / ref sheets
     active_sheets <- active_sheets[active_sheets != "VGSDefaultSpeciesList"]
     active_sheets <- active_sheets[active_sheets != "Species Richness"]
@@ -106,11 +105,12 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     while (x < length(historical_data) + 1) {
       ## get all info from each excel sheet -> Reading one sheet at a time
       data_import <<- historical_data[[x]]
-
+      
       ## function for key info and data import
       batch_import(historical_raw_data = data_import)
+      ## move to next tab
+      x <<- x + 1
       ## move site to correct folder or create parent folders
-      # create_schema()
     }
     
     ## saving completed files for output
@@ -120,6 +120,7 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     ## move to next batch file
     batch_file <<- batch_file + 1
     
+    print("next batch file...")
     ## saving species added for QA/QC ->
     ## get unique values by site and arrange
     sp_added<<- unique(species_added)
@@ -250,8 +251,7 @@ batch_import <<- function(historical_raw_data) {
     }
     
   }
-  ## move to next tab
-  x <<- x + 1
+
 }
 ## end of batch import data function -------------------------------------------
 
@@ -1263,10 +1263,6 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
         data[d, ][2] <- paste0("'", data[d, ][2], "'")
       }
       
-      # !is.na(sample_data[1,8])
-      # sample_data
-      # View(nest_freq_ready)
-      
       ## each col / sample (starts at column 5)
       s <- 1
       while (s < ncol(sample_data) + 1) {
@@ -1452,7 +1448,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
      VALUES
            (", PK_Sample, ",", FK_Event, ",'", gc_random[d], "',", Transect, ",", SampleNumber[d], ",", Element[d], ",", SubElement, ",'", gc_random[d], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
       
-      test<<- insert_sample
+      #test<<- insert_sample
       
       ## insert GC data
       dbExecute(mydb, insert_sample)
