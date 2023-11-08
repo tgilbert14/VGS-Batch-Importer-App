@@ -79,3 +79,4 @@ pasture <- paste0(site_folder_info$Pasture)
 allotment <- paste0(site_folder_info$Allotment)
 ranger_district <- paste0(site_folder_info$ADMIN_ORG_)
 forest <- paste0("Bridger-Teton National Forest")
+

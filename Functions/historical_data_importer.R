@@ -93,6 +93,20 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     active_sheets <- active_sheets[active_sheets != "VGSDefaultSpeciesList"]
     active_sheets <- active_sheets[active_sheets != "Species Richness"]
     
+    ## reorder active sheets for R4 BT to make sure site is ceated 1st!
+    if (ServerKey == "USFS R4-BT") {
+      reorder_sheets<- active_sheets[active_sheets != "LPI All Lines (500 points)"]
+      reorder_sheets<- reorder_sheets[reorder_sheets != "Line Intercept (All Lines)"]
+      reorder_sheets<- reorder_sheets[reorder_sheets != "Production- 3 Transects"]
+      reorder_sheets<- reorder_sheets[reorder_sheets != "Production- 4 Transects"]
+      
+      reorder_sheets<- append(reorder_sheets, "LPI All Lines (500 points)")
+      reorder_sheets<- append(reorder_sheets, "Line Intercept (All Lines)")
+      reorder_sheets<- append(reorder_sheets, "Production- 3 Transects")
+      reorder_sheets<- append(reorder_sheets, "Production- 4 Transects")
+      active_sheets<- reorder_sheets
+    }
+    
     # Loop through each sheet and read the data into a data frame
     for (sheet_name in active_sheets) {
       suppressMessages(historical_data[[sheet_name]] <- read_excel(data_file[batch_file], sheet = sheet_name, col_names = F, trim_ws = T))
@@ -1455,74 +1469,57 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
   ## not working.. using old FREQ insert data
   ## If LPI - reset values for insert for that specific method
   if (method == "LPI") {
-    # data<- nest_freq_ready
-    
-    ## sample data is col 5:25 (T1-T20) usually
-    ## last column is a summary column
-    sample_data <- data[5:(ncol(data) - 1)]
-    
+    # data<- temp_lpi
+
     d <- 1
     while (d < nrow(data) + 1) {
       
-      ## gather each species and qualifier and track so we can QA/QC species being added
-      sp<<- data[d, ][[1]]
-      qualifier<<- data[d, ][2]
-      temp_table<<- data.frame(sp=paste0(sp),qualifier=paste0(qualifier),from=paste0(file_on))
-      species_added<<- rbind(species_added, temp_table)
+      # ## gather each species and qualifier and track so we can QA/QC species being added
+      # sp<<- data[d, ][[1]]
+      # qualifier<<- data[d, ][2]
+      # temp_table<<- data.frame(sp=paste0(sp),qualifier=paste0(qualifier),from=paste0(file_on))
+      # species_added<<- rbind(species_added, temp_table)
       
-      ## message for data log for species in VGS check
-      if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect," - ",file_on))
-      ## message for data log for species qualifier length
-      if (nchar(data[d, ][2]) > 20) print(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",file_on))
-      
+      ## filter to not check for gc - species only
+      sp_check<- data %>% 
+        filter(nchar(Species) != 13)
+        
       ## stop app if not in Power Mode
       if (power_mode == FALSE) {
         ## alerts for app stoppages --------------------------------------------
         ## Species not in VGS .db species list = stop()
-        if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) {
-          ## message for data log for species in VGS check
-          print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect," - ",file_on))
+        if (length(grep(toupper(sp_check[d, ][[3]]), vgs_species_list$PK_Species, value = T)) == 0) {
+          ## message for sp_check log for species in VGS check
+          print(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for belt#", sp_check[d, ][[1]]," - ",file_on))
           ## alert for species
-          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect," - ",file_on), type = "error")
+          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for belt#", sp_check[d, ][[1]]," - ",file_on), type = "error")
           Sys.sleep(15)
         }
         
-        if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect," - ",file_on))
+        if (length(grep(toupper(sp_check[d, ][[3]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for belt#", sp_check[d, ][[1]]," - ",file_on))
         
-        ## Check length of species qualifier = stop() if over 20 char
-        ## print message for qualifier error
-        if (nchar(data[d, ][2]) > 20) print(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",file_on))
-        ## pop up warning
-        if (nchar(data[d, ][2]) > 20) {
-          shinyalert("Species Qualifier too long!", paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (>20) for belt#", Transect," - ",file_on), type = "error")
-          Sys.sleep(20)
-        }
-        ## stop app
-        if (nchar(data[d, ][2]) > 20) stop(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",file_on))
-        ## end of checks to stop app for nested freq ---------------------------
+        ## end of checks to stop app for species -------------------------------
         
       } ## end of if in power mode 
       
+      ## add ground cover check??
       
-      ## for each species - format if Species Qualifier is not null
-      if (data[d, ][2] != "NULL") {
-        ## get rid of problematic symbols
-        data[d, ][2] <- gsub('"', "", data[d, ][2], fixed = T)
-        data[d, ][2] <- gsub("'", "", data[d, ][2], fixed = T)
-        ## add quotes
-        data[d, ][2] <- paste0("'", data[d, ][2], "'")
-      }
+      ## also need to track what is being enterded??
       
-      ## each col / sample (starts at column 5)
-      s <- 1
-      while (s < ncol(sample_data) + 1) {
-        if (!is.na(sample_data[d, s])) {
-          PK_Sample <- GUID()
-          
-          ## trim white space for numbers
-          Element<- as.numeric(str_trim(sample_data[d, s]))
-          
-          insert_sample <- paste0("INSERT INTO Sample
+      ## old sp qualifier code
+      # ## for each species - format if Species Qualifier is not null
+      # if (data[d, ][2] != "NULL") {
+      #   ## get rid of problematic symbols
+      #   data[d, ][2] <- gsub('"', "", data[d, ][2], fixed = T)
+      #   data[d, ][2] <- gsub("'", "", data[d, ][2], fixed = T)
+      #   ## add quotes
+      #   data[d, ][2] <- paste0("'", data[d, ][2], "'")
+      # }
+      
+      ## each col / sample insert
+      PK_Sample <- GUID()
+      
+      insert_sample <- paste0("INSERT INTO Sample
            (PK_Sample
            ,FK_Event
            ,FK_Species
@@ -1545,65 +1542,16 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
            ,SyncKey
            ,SyncState)
      VALUES
-           (", PK_Sample, ",", FK_Event, ",'", toupper(data[d, ][[1]]), "',", Transect, ",", s, ",", Element, ",", SubElement, ",'", toupper(data[d, ][[1]]), "',", data[d, ][2], ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
-          
-          ## insert NF data
-          dbExecute(mydb, insert_sample)
-        }
-        ## move to next sample
-        s <- s + 1
-      }
+           (", PK_Sample, ",", FK_Event, ",'", data$Species[d],"',", data$Transect[d],",", data$Sample[d],",1,", data$SubElement[d],",'", data$Species[d],"',",SpeciesQualifier,",",FieldQualifier,",",cParameter,",",cParameter2,",",cParameter3,",1,", nValue2,",", nValue2,",",cValue,",",cValue2,",",cValue3,",",SyncKey,",", SyncState,")")
+      
+      ## insert NF data
+      dbExecute(mydb, insert_sample)
       
       ## move to next row/species
       d <- d + 1
     }
-    
-    ## need to mark SYS_NONE if nothing in frame but did it ->
-    ## after all species inserted - go back and check for sys_nones
-    s <- 1
-    while (s < ncol(sample_data) + 1) {
-      ## check if data
-      is_there_data <- !is.na(sample_data[s])
-      ## if at least one true -> don't add anything
-      sys_none_check <- grep("TRUE", is_there_data)
-      ## if = 0 -> add SYS_NONE to sample# s
-      if (length(sys_none_check) == 0) {
-        PK_Sample <- GUID()
-        
-        insert_sample <- paste0("INSERT INTO Sample
-           (PK_Sample
-           ,FK_Event
-           ,FK_Species
-           ,Transect
-           ,SampleNumber
-           ,Element
-           ,SubElement
-           ,FieldSymbol
-           ,SpeciesQualifier
-           ,FieldQualifier
-           ,cParameter
-           ,cParameter2
-           ,cParameter3
-           ,nValue
-           ,nValue2
-           ,nValue3
-           ,cValue
-           ,cValue2
-           ,cValue3
-           ,SyncKey
-           ,SyncState)
-     VALUES
-           (", PK_Sample, ",", FK_Event, ",'SYS_NONE',", Transect, ",", s, ",1,", SubElement, ",'SYS_NONE',NULL,", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
-        
-        ## testing
-        see_me<<- insert_sample
-        
-        ## insert NF data
-        dbExecute(mydb, insert_sample)
-      }
-      s <- s + 1
-    }
-    print("Nested Freq inserted...")
+
+    print("LPI data inserted...")
   }
 }
 ## end of insert data function -------------------------------------------------
