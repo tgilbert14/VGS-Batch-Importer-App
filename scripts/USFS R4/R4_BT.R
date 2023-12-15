@@ -134,7 +134,7 @@ if (length(grep("Line Intercept", active_sheets[x]))==1) {
 
 ## for ground cover and nested frequency tab
 if (length(grep("Nested Frequency", active_sheets[x]))==1) {
-  ## freq data insert ----------------------------------------------------------
+  ## Freq data insert ----------------------------------------------------------
   print(paste0("Parsing Data for Nested Freq..."))
   
   ## look for species label
@@ -352,3 +352,4 @@ EventName = 'Frequency (by quadrat)'")
   }
 } ## End of nested freq tabs
 
+print(paste0("Leaving R4_BT.R ", active_sheets[x]))

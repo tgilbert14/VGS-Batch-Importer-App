@@ -264,6 +264,8 @@ batch_import <<- function(historical_raw_data) {
       base::source("scripts/NRCS AZ/NRCS_AZ.R")
     }
     
+    print(paste0("Finished ", active_sheets[x]))
+    
   }
 
 }
@@ -1183,42 +1185,16 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
 ## insert statement to add data - nested frequency
 insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", SampleNumber = "NULL", Element = "NULL", SubElement = "NULL", FieldSymbol, SpeciesQualifier = "NULL", FieldQualifier = "NULL", cParameter = "NULL", cParameter2 = "NULL", cParameter3 = "NULL", nValue = "NULL", nValue2 = "NULL", nValue3 = "NULL", cValue = "NULL", cValue2 = "NULL", cValue3 = "NULL", SyncKey, SyncState) {
   
-  ## testing
-  # FK_Event=checked_PK_Event
-  
-  ## Setting base variables to NULL
-  ## default to "NULL" for most variables - update later
-  # FK_Species="NULL"
-  # Transect="NULL"
-  # SampleNumber="NULL"
-  # Element="NULL"
-  # SubElement="NULL"
-  # ##Field symbol usually the same as FK_Species
-  # #FieldSymbol="NULL"
-  # SpeciesQualifier="NULL"
-  # FieldQualifier="NULL"
-  # cParameter="NULL"
-  # cParameter2="NULL"
-  # cParameter3="NULL"
-  # nValue="NULL"
-  # nValue2="NULL"
-  # nValue3="NULL"
-  # cValue="NULL"
-  # cValue2="NULL"
-  # cValue3="NULL"
-  
   ## setting sync key/states
   # SyncKey <- 33
   # SyncState <- 1
-  
-  ## moved higher up in script -->
-  # ## get species list from database
-  # vgs_species_list_q <- paste0("SELECT PK_Species from Species where List = 'NRCS'")
-  # 
-  # vgs_species_list <- dbGetQuery(mydb, vgs_species_list_q)
-  
+
   ## If Nested Freq - reset values for insert for that specific method
   if (method == "NF") {
+    
+    ## data validation check function
+    data_quality_data_frame(data)
+    
     # data<- nest_freq_ready
     
     ## sample data is col 5:25 (T1-T20) usually
@@ -1235,7 +1211,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
       species_added<<- rbind(species_added, temp_table)
       
       ## message for data log for species in VGS check
-      if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect," - ",file_on))
+      if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for NF belt#", Transect," - ",file_on))
       ## message for data log for species qualifier length
       if (nchar(data[d, ][2]) > 20) print(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",file_on))
       
@@ -1251,7 +1227,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
           Sys.sleep(15)
         }
         
-        if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect," - ",file_on))
+        if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for NF belt#", Transect," - ",file_on))
         
         ## Check length of species qualifier = stop() if over 20 char
         ## print message for qualifier error
@@ -1470,6 +1446,9 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
   ## If LPI - reset values for insert for that specific method
   if (method == "LPI") {
     # data<- temp_lpi
+    
+    ## data validation check function
+    data_quality_data_frame(data)
 
     d <- 1
     while (d < nrow(data) + 1) {
@@ -1492,11 +1471,11 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
           ## message for sp_check log for species in VGS check
           print(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for belt#", sp_check[d, ][[1]]," - ",file_on))
           ## alert for species
-          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for belt#", sp_check[d, ][[1]]," - ",file_on), type = "error")
+          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for LPI belt#", sp_check[d, ][[1]]," - ",file_on), type = "error")
           Sys.sleep(15)
         }
         
-        if (length(grep(toupper(sp_check[d, ][[3]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for belt#", sp_check[d, ][[1]]," - ",file_on))
+        if (length(grep(toupper(sp_check[d, ][[3]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for LPI belt#", sp_check[d, ][[1]]," - ",file_on))
         
         ## end of checks to stop app for species -------------------------------
         

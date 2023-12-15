@@ -1,9 +1,7 @@
 ## General Workflow ->
 ## Run as 'power_mode=TRUE' first to generate species errors that need to be
-## fixed. File is generated in 'www' folder as...
-##
-##
-##
+## fixed. File is generated in 'www' folder for QA/QC
+## Fix errors and run the script again in a clean database in 'power_mode=FALSE'
 
 ## After all fixes have taken place -> Run in 'power_mode=FALSE' which has various
 ## QA/QC checks. Must run through all batch data at once with no errors to work.
@@ -22,6 +20,9 @@ library(tidyverse)
 library(shinyjs)
 library(DT)
 library(openxlsx)
+
+## data validation function
+source(paste0(app_path,"/Functions/data_validation.R"), local = T)
 
 ## power mode will push past species insert error but reference them in output.log
 #power_mode=TRUE
