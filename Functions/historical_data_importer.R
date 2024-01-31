@@ -1210,6 +1210,12 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
       temp_table<<- data.frame(sp=paste0(sp),qualifier=paste0(qualifier),from=paste0(file_on))
       species_added<<- rbind(species_added, temp_table)
       
+      if (d == nrow(data)) {
+        ## create a break between files
+        temp_table<<- data.frame(sp=paste0(" "),qualifier=paste0(" "),from=paste0(file_on))
+        species_added<<- rbind(species_added, temp_table)
+      }
+      
       ## message for data log for species in VGS check
       if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for NF belt#", Transect," - ",file_on))
       ## message for data log for species qualifier length
@@ -1481,19 +1487,12 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
         
       } ## end of if in power mode 
       
-      ## add ground cover check??
       
-      ## also need to track what is being enterded??
+      ## if 'Surface' / 'S' , need to add for insert statment!
       
-      ## old sp qualifier code
-      # ## for each species - format if Species Qualifier is not null
-      # if (data[d, ][2] != "NULL") {
-      #   ## get rid of problematic symbols
-      #   data[d, ][2] <- gsub('"', "", data[d, ][2], fixed = T)
-      #   data[d, ][2] <- gsub("'", "", data[d, ][2], fixed = T)
-      #   ## add quotes
-      #   data[d, ][2] <- paste0("'", data[d, ][2], "'")
-      # }
+      ## add ground cover check?? make sure species in sheet is basal?
+      
+      ## also need to track what is being entered for QA/QC after like Freq...
       
       ## each col / sample insert
       PK_Sample <- GUID()
@@ -1532,6 +1531,13 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
 
     print("LPI data inserted...")
   }
+  
+  ## If Line Intercept...
+  
+  ## If clipping Production...
+  
+  ## ...
+  
 }
 ## end of insert data function -------------------------------------------------
 

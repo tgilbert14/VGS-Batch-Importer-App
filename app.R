@@ -87,7 +87,7 @@ ui <- fluidPage(
                         actionButton(icon = icon("skull"), "help", " Help Me", width = '100%'),
       tabsetPanel(type = "tabs",
                   tabPanel(
-                    "Status",
+                    "Status...",
                     withSpinner(tableOutput("status"))
                   ) ## end of tab panal - status
       ) ## end of tab set panal(s)
