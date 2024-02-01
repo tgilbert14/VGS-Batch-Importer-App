@@ -1185,17 +1185,19 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
 ## insert statement to add data - nested frequency
 insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", SampleNumber = "NULL", Element = "NULL", SubElement = "NULL", FieldSymbol, SpeciesQualifier = "NULL", FieldQualifier = "NULL", cParameter = "NULL", cParameter2 = "NULL", cParameter3 = "NULL", nValue = "NULL", nValue2 = "NULL", nValue3 = "NULL", cValue = "NULL", cValue2 = "NULL", cValue3 = "NULL", SyncKey, SyncState) {
   
-  ## setting sync key/states
+  ## setting sync key/states (local)
   # SyncKey <- 33
   # SyncState <- 1
 
   ## If Nested Freq - reset values for insert for that specific method
   if (method == "NF") {
+    # data<- nest_freq_ready
+    
+    ## pulling data frame of species code, qualifier, speciesName, commonName, 
+    ## and 20 columns with associated nested numbers (0,1,2,3,or NA)
     
     ## data validation check function
     data_quality_data_frame(data)
-    
-    # data<- nest_freq_ready
     
     ## sample data is col 5:25 (T1-T20) usually
     ## last column is a summary column
@@ -1404,6 +1406,8 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
   ## If Ground Cover - reset values for insert for that specific method
   if (method == "GC") {
     # data<- hi2
+
+    ## pulling list of GC species, e.g., ('G_ROCK3','G_$QH0J18RPQ5', etc.)
     
     ## randomize ground cover list
     gc_random<- sample(hi2)
@@ -1447,11 +1451,12 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     print("GC inserted...")
   }
   
-  
-  ## not working.. using old FREQ insert data
+  ## not fully tested... in progress
   ## If LPI - reset values for insert for that specific method
   if (method == "LPI") {
     # data<- temp_lpi
+    
+    ## pulling data frame w/ Transect, Sample, Species, and SubElement
     
     ## data validation check function
     data_quality_data_frame(data)
@@ -1459,20 +1464,21 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     d <- 1
     while (d < nrow(data) + 1) {
       
-      # ## gather each species and qualifier and track so we can QA/QC species being added
-      # sp<<- data[d, ][[1]]
+      ## filter to not check for gc - species only (GC are char 13)
+      sp_check<- data %>% 
+        filter(nchar(Species) != 13)
+      
+      ## ??
+      ## gather each species to track QA/QC species being added
+      # sp<<- sp_check[d, ][[3]]
       # qualifier<<- data[d, ][2]
       # temp_table<<- data.frame(sp=paste0(sp),qualifier=paste0(qualifier),from=paste0(file_on))
       # species_added<<- rbind(species_added, temp_table)
-      
-      ## filter to not check for gc - species only
-      sp_check<- data %>% 
-        filter(nchar(Species) != 13)
         
       ## stop app if not in Power Mode
       if (power_mode == FALSE) {
         ## alerts for app stoppages --------------------------------------------
-        ## Species not in VGS .db species list = stop()
+        ## Species code not in VGS .db species list = stop()
         if (length(grep(toupper(sp_check[d, ][[3]]), vgs_species_list$PK_Species, value = T)) == 0) {
           ## message for sp_check log for species in VGS check
           print(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for belt#", sp_check[d, ][[1]]," - ",file_on))
@@ -1532,7 +1538,84 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     print("LPI data inserted...")
   }
   
+  ## Not tested or updated yet -> pasted from other method...
   ## If Line Intercept...
+  if (method == "LI") {
+    # data<- temp_lpi
+    
+    ## data validation check function
+    data_quality_data_frame(data)
+    
+    d <- 1
+    while (d < nrow(data) + 1) {
+      
+      # ## gather each species and qualifier and track so we can QA/QC species being added
+      # sp<<- data[d, ][[1]]
+      # qualifier<<- data[d, ][2]
+      # temp_table<<- data.frame(sp=paste0(sp),qualifier=paste0(qualifier),from=paste0(file_on))
+      # species_added<<- rbind(species_added, temp_table)
+      
+      ## filter to not check for gc - species only
+      sp_check<- data %>% 
+        filter(nchar(Species) != 13)
+      
+      ## stop app if not in Power Mode
+      if (power_mode == FALSE) {
+        ## alerts for app stoppages --------------------------------------------
+        ## Species not in VGS .db species list = stop()
+        if (length(grep(toupper(sp_check[d, ][[3]]), vgs_species_list$PK_Species, value = T)) == 0) {
+          ## message for sp_check log for species in VGS check
+          print(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for belt#", sp_check[d, ][[1]]," - ",file_on))
+          ## alert for species
+          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for LPI belt#", sp_check[d, ][[1]]," - ",file_on), type = "error")
+          Sys.sleep(15)
+        }
+        
+        if (length(grep(toupper(sp_check[d, ][[3]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for LPI belt#", sp_check[d, ][[1]]," - ",file_on))
+        
+        ## end of checks to stop app for species -------------------------------
+        
+      } ## end of if in power mode 
+      
+      ## also need to track what is being entered for QA/QC after like Freq...
+      
+      ## each col / sample insert
+      PK_Sample <- GUID()
+      
+      insert_sample <- paste0("INSERT INTO Sample
+           (PK_Sample
+           ,FK_Event
+           ,FK_Species
+           ,Transect
+           ,SampleNumber
+           ,Element
+           ,SubElement
+           ,FieldSymbol
+           ,SpeciesQualifier
+           ,FieldQualifier
+           ,cParameter
+           ,cParameter2
+           ,cParameter3
+           ,nValue
+           ,nValue2
+           ,nValue3
+           ,cValue
+           ,cValue2
+           ,cValue3
+           ,SyncKey
+           ,SyncState)
+     VALUES
+           (", PK_Sample, ",", FK_Event, ",'", data$Species[d],"',", data$Transect[d],",", data$Sample[d],",1,", data$SubElement[d],",'", data$Species[d],"',",SpeciesQualifier,",",FieldQualifier,",",cParameter,",",cParameter2,",",cParameter3,",1,", nValue2,",", nValue2,",",cValue,",",cValue2,",",cValue3,",",SyncKey,",", SyncState,")")
+      
+      ## insert NF data
+      dbExecute(mydb, insert_sample)
+      
+      ## move to next row/species
+      d <- d + 1
+    }
+    
+    print("LI data inserted...")
+  }
   
   ## If clipping Production...
   

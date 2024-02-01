@@ -37,6 +37,12 @@ pasture_info<<- openxlsx::read.xlsx("www/pasture_data.xlsx")
 ## -----------------------------------------------------------------------------
 ## Define UI 
 ui <- fluidPage(
+  tags$head(
+    tags$script(src = "https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"),
+    tags$link(rel = "stylesheet", href = "https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css"),
+    tags$script(src = "confirm.js")
+  ),
+  br(),
   
   ## general theme
   theme = shinytheme("slate"),
