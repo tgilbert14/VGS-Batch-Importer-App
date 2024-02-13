@@ -1543,6 +1543,8 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
   if (method == "LI") {
     # data<- temp_lpi
     
+    ## get Transect, Sample, Species, Element, nValue, nValue2, nValue3
+    
     ## data validation check function
     data_quality_data_frame(data)
     

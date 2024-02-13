@@ -136,16 +136,16 @@ server <- function(input, output, session) {
 
       ## changes input depending on Protocol selected
       if (input$Protocol == "USFS R6 Rogue River - Tally") {
-        p2 <- c("USFS R6 Rogue River Standard", "No"="NULL")
+        p2 <- c("USFS R6 Rogue River Standard", "Not Allowed"="NULL")
         filter_keys <- c("Rogue River-Siskiyou National Forests"="USFS R6-RR")
       }
       if (input$Protocol == "USFS R6 Rogue River Standard") {
         #p2 <- c("USFS R6 Rogue River - Tally", "NA"="NULL")
-        p2 <- c("No"="NULL")
+        p2 <- c("Not Allowed"="NULL")
         filter_keys <- c("Rogue River-Siskiyou National Forests"="USFS R6-RR")
       }
       if (input$Protocol == "USFS R4 BTNF Range Monitoring") {
-        p2 <- c("No"="NULL")
+        p2 <- c("Not Allowed"="NULL")
         filter_keys <- c("Bridger-Teton National Forest"="USFS R4-BT")
       }
       

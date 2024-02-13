@@ -1,6 +1,6 @@
 $(document).ready(function() {
   var upload = false;
-  $("#create").on("click", async function(event) {
+  $("#mode").on("click", async function(event) {
 /*    if(!create) {
       create = true;
       return true;
