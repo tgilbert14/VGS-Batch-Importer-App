@@ -213,12 +213,11 @@ server <- function(input, output, session) {
         ## first one is NULL so needs to check 2nd
         ## if reaches final output in function - sucessful = got past function checks
         if (status_check[2] == "**Batch Import Complete**") {
-          shinyalert("Niceee!", "**Batch Import Complete**", type = "success", closeOnClickOutside = F)
+          shinyalert("Niceee!", "**Batch Import Complete**", type = "success", closeOnClickOutside = F, immediate = T)
         } else ## did not finish going through function for data import
-          shinyalert("Oops!", "Something went wrong. Check log table or file", type = "error", closeOnClickOutside = F)
+          shinyalert("Oops!", "Something went wrong. Check log table or file", type = "error", closeOnClickOutside = F, immediate = T)
       }
 
-      
       data_log_output
       
     }) ## end of render table

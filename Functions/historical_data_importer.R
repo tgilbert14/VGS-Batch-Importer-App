@@ -9,8 +9,13 @@ library(DBI)
 library(RSQLite)
 library(stringr)
 
+## path for VGS database
+db_loc <- "C:/ProgramData/VGSData/VGS50.db"
+## connecting to VGS database
+mydb <- dbConnect(RSQLite::SQLite(), dbname = db_loc)
+
 ## table to save added unique species for QA/QC
-species_added<<- data.frame(sp=character(),qualifier=character(),from=character())
+#species_added<<- data.frame(sp=character(),qualifier=character(),from=character())
 
 ## [[ 1st function ]]
 ## READ IMPORT DATA FUNCTION ---------------------------------------------------
@@ -18,10 +23,6 @@ species_added<<- data.frame(sp=character(),qualifier=character(),from=character(
 ##  function(s) for import data process. Primarily gets raw data and passes it
 ##  on to functions over and over until all data selected is imported...
 read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
-  ## path for VGS database
-  db_loc <- "C:/ProgramData/VGSData/VGS50.db"
-  ## connecting to VGS database
-  mydb <- dbConnect(RSQLite::SQLite(), dbname = db_loc)
   
   ## get species list from database
   vgs_species_list_q <- paste0("SELECT PK_Species from Species where List = 'NRCS'")
@@ -59,7 +60,7 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     shinyalert("...is crunching your data now", "Please wait, looking for data keys",
                imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
                imageWidth = 100, imageHeight = 100, type = "success", closeOnClickOutside = T,
-               showConfirmButton = F,timer = 3500)
+               showConfirmButton = F, immediate = TRUE)
   }
   ## if IN Power Mode
   if (power_mode == TRUE) {
@@ -83,8 +84,8 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     
     print(paste0("Moving to File ", batch_file, " : ",file_on))
 
-    shinyalert(paste0("Starting File #", batch_file," out of ",length(data_file)), file_on,
-               type = "success", timer = 3500, showConfirmButton = F)
+    shinyalert(paste0("Working on file #", batch_file," out of ",length(data_file)), file_on,
+               type = "success", immediate = T, showConfirmButton = T, closeOnClickOutside = T)
     
     ## read specific batch file
     active_sheets <- excel_sheets(data_file[batch_file])
@@ -92,6 +93,7 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     ## don't care about VGS species list tab / ref sheets
     active_sheets <- active_sheets[active_sheets != "VGSDefaultSpeciesList"]
     active_sheets <- active_sheets[active_sheets != "Species Richness"]
+    active_sheets <- trimws(active_sheets)
     
     ## reorder active sheets for R4 BT to make sure site is ceated 1st!
     if (ServerKey == "USFS R4-BT") {
@@ -131,27 +133,37 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     output_list[batch_file,1]<<- batch_file
     output_list[batch_file,2]<<- data_file[[batch_file]]
     
-    ## move to next batch file
-    batch_file <<- batch_file + 1
-    
-    print("next batch file...")
     ## saving species added for QA/QC ->
     ## get unique values by site and arrange
     sp_added<<- unique(species_added)
     sp_added_final<<- sp_added %>% 
       arrange(from, sp, qualifier)
+    ## join to find species name as well
+    names(sp_added_final)[1] <<- "PK_Species"
+    sp_added_final<<- left_join(sp_added_final, vgs_species_list_more)
+
+    write.xlsx(sp_added_final, paste0(app_path,"/www/SpeciesAddedByFile/Species_added_QAQC_",site_name,".xlsx"))
+    
+    ## move to next batch file
+    batch_file <<- batch_file + 1
+    
+    print("next batch file...")
 
     if (batch_file == length(data_file) + 1) {
       print("**Batch Import Complete**")
+      
+      Sys.sleep(.2)
+      DBI::dbDisconnect(mydb)
+      Sys.sleep(.2)
+      closeAllConnections()
     }
+    
+    Sys.sleep(.2)
 
   }
   ## create species added final for QA QC
-  time<- substr(Sys.time(),0,nchar(Sys.time())-3)
-  write.xlsx(sp_added_final, paste0(app_path,"/www/Species_added_QAQC_",time,".xlsx"))
-  
-  DBI::dbDisconnect(mydb)
-  closeAllConnections()
+  #time<- substr(Sys.time(),0,nchar(Sys.time())-3)
+
 }
 ## end of read import data function --------------------------------------------
 
@@ -1206,17 +1218,26 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     d <- 1
     while (d < nrow(data) + 1) {
  
-      ## gather each species and qualifier and track so we can QA/QC species being added
-      sp<<- data[d, ][[1]]
-      qualifier<<- data[d, ][2]
-      temp_table<<- data.frame(sp=paste0(sp),qualifier=paste0(qualifier),from=paste0(file_on))
-      species_added<<- rbind(species_added, temp_table)
-      
-      if (d == nrow(data)) {
-        ## create a break between files
-        temp_table<<- data.frame(sp=paste0(" "),qualifier=paste0(" "),from=paste0(file_on))
-        species_added<<- rbind(species_added, temp_table)
+      ## START OF NEW CODE----
+      # Initialize a list to store data frames
+      species_added_list <- vector("list", nrow(data))
+      # Loop over rows of data
+      for (d in seq_len(nrow(data))) {
+        # Gather each species and qualifier
+        sp <- as.character(data[d, 1])
+        qualifier <- as.character(data[d, 2])
+        
+        # Create a temporary data frame
+        temp_table <- data.frame(sp = sp, qualifier = qualifier)
+        
+        # Store the data frame in the list
+        species_added_list[[d]] <- temp_table
       }
+      
+      # Combine all data frames into one
+      species_added <<- do.call(rbind, species_added_list)
+      
+      ## END OF NEW CODE----
       
       ## message for data log for species in VGS check
       if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for NF belt#", Transect," - ",file_on))
