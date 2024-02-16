@@ -1,16 +1,4 @@
 ## Create function to create GUID for VGS
-
-## Read in libraries -----------------------------------------------------------
-library(uuid)
-library(tidyverse)
-library(readxl)
-library(DBI)
-library(RSQLite)
-library(stringr)
-
-## SQL local Connection info from R to local VGS5 (VGS50.db)
-db_loc <<- "C:/ProgramData/VGSData/VGS50.db"
-mydb <<- dbConnect(RSQLite::SQLite(), dbname = db_loc)
 ## -----------------------------------------------------------------------------
 
 ## GUID creation function ------------------------------------------------------

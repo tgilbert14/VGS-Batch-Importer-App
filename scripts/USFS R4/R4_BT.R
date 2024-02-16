@@ -281,9 +281,15 @@ if (length(grep("Nested Frequency", active_sheets[x]))==1) {
   start_gc<- grep("Ground Cover",raw_data[[1]])
   
   freq_data_raw<- historical_raw_data[c((start_freq+2):start_gc-1),c(find_sp_data_col:ncol(historical_raw_data))]
-  
+
   nf_data<- freq_data_raw %>% 
     filter(!is.na(freq_data_raw[1]))
+  
+  if (data_quality_data_frame(nf_data) != TRUE) {
+    stop("data is not a data frame...")
+  }
+  ## weird "<NA>" values?
+  #nf_data[] <- lapply(nf_data, function(x) sub("\\b<NA>\\b", NA, x))
   
   trim_sheet_name<- trimws(active_sheets[x])
   #(substr(active_sheets[x], nchar(active_sheets[x]), nchar(active_sheets[x])))
@@ -293,13 +299,13 @@ if (length(grep("Nested Frequency", active_sheets[x]))==1) {
     print(paste0("No Nested Freq for this Belt ", belt_num))
   }
   #View(nf_data)
-  
+
   ## only insert if data present
   if (nrow(nf_data) > 0) {
     ## save as data frame
     nf_data <- as.data.frame(nf_data)
     ## row 2 = Qualifiers(SpeciesQ/FieldQ) -> NA should be NULL
-    nf_data[, 2][is.na(nf_data[, 2])] <- "NULL"
+    #nf_data[, 2][is.na(nf_data[, 2])] <- "NULL"
     ## change all 0's to NA (specific to this data)
     nf_data[nf_data == 0] <- NA
     ## then change all 4's to 0's -> 0 means it is in the largest frame
@@ -377,7 +383,7 @@ if (length(grep("Nested Frequency", active_sheets[x]))==1) {
     
     nest_freq_ready<- nf_data_and_common
     #View(nest_freq_ready)
-    
+
     ## searching for specific term for specific protocol
     term <- "BTNF Range Monitoring"
     

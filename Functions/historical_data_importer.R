@@ -1,18 +1,6 @@
 ## Historical Data importer
 ## set environment
 #setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-## Read in libraries -----------------------------------------------------------
-library(uuid)
-library(tidyverse)
-library(readxl)
-library(DBI)
-library(RSQLite)
-library(stringr)
-
-## path for VGS database
-db_loc <- "C:/ProgramData/VGSData/VGS50.db"
-## connecting to VGS database
-mydb <- dbConnect(RSQLite::SQLite(), dbname = db_loc)
 
 ## table to save added unique species for QA/QC
 #species_added<<- data.frame(sp=character(),qualifier=character(),from=character())
@@ -38,9 +26,12 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
   Protocol_2 <<- Protocol_2
   output_list<<- data.frame(FileNumber=numeric(),CompletedFileList=character())
   
-  ## choosing files to import - built to handle multipe
-  data_file <<- choose.files("Choose Historical Data to import (excel)", multi = T)
-  ## variable to check if user selected anything
+  ## choosing files to import - built to handle multiple
+  data_file <<- choose.files(default = "excel file(s)",
+                             multi = T, caption = "Select Historical Batch Data Files(s) to Import")
+  
+
+  ## variable to check if user selected anything 'the void'
   the_void <- character(0)
   
   if (identical(data_file, the_void)) {
@@ -71,8 +62,6 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
                showConfirmButton = F,timer = 3500)
   }
   
-
-  
   ## reading in sheets to list
   historical_data <<- list()
   ## go through each batch file
@@ -95,7 +84,7 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     active_sheets <- active_sheets[active_sheets != "Species Richness"]
     active_sheets <- trimws(active_sheets)
     
-    ## reorder active sheets for R4 BT to make sure site is ceated 1st!
+    ## reorder active sheets for R4 BT to make sure site is created 1st!
     if (ServerKey == "USFS R4-BT") {
       reorder_sheets<- active_sheets[active_sheets != "LPI All Lines (500 points)"]
       reorder_sheets<- reorder_sheets[reorder_sheets != "Line Intercept (All Lines)"]
@@ -133,17 +122,17 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     output_list[batch_file,1]<<- batch_file
     output_list[batch_file,2]<<- data_file[[batch_file]]
     
-    ## saving species added for QA/QC ->
-    ## get unique values by site and arrange
-    sp_added<<- unique(species_added)
-    sp_added_final<<- sp_added %>% 
-      arrange(from, sp, qualifier)
-    ## join to find species name as well
-    names(sp_added_final)[1] <<- "PK_Species"
-    sp_added_final<<- left_join(sp_added_final, vgs_species_list_more)
+    ## got rid of this, query instead
+    # ## saving species added for QA/QC ->
+    # ## get unique values by site and arrange
+    # sp_added<<- unique(species_added)
+    # sp_added_final<<- sp_added %>% 
+    #   arrange(sp, qualifier)
+    # ## join to find species name as well
+    # names(sp_added_final)[1] <<- "PK_Species"
+    # sp_added_final<<- left_join(sp_added_final, vgs_species_list_more)
+    # write.xlsx(sp_added_final, paste0(app_path,"/www/SpeciesAddedByFile/Species_added_QAQC_",site_name,".xlsx"))
 
-    write.xlsx(sp_added_final, paste0(app_path,"/www/SpeciesAddedByFile/Species_added_QAQC_",site_name,".xlsx"))
-    
     ## move to next batch file
     batch_file <<- batch_file + 1
     
@@ -152,17 +141,9 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     if (batch_file == length(data_file) + 1) {
       print("**Batch Import Complete**")
       
-      Sys.sleep(.2)
-      DBI::dbDisconnect(mydb)
-      Sys.sleep(.2)
-      closeAllConnections()
     }
-    
-    Sys.sleep(.2)
 
   }
-  ## create species added final for QA QC
-  #time<- substr(Sys.time(),0,nchar(Sys.time())-3)
 
 }
 ## end of read import data function --------------------------------------------
@@ -1196,57 +1177,49 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
 ## INSERT DATA FUNCTION --------------------------------------------------------
 ## insert statement to add data - nested frequency
 insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", SampleNumber = "NULL", Element = "NULL", SubElement = "NULL", FieldSymbol, SpeciesQualifier = "NULL", FieldQualifier = "NULL", cParameter = "NULL", cParameter2 = "NULL", cParameter3 = "NULL", nValue = "NULL", nValue2 = "NULL", nValue3 = "NULL", cValue = "NULL", cValue2 = "NULL", cValue3 = "NULL", SyncKey, SyncState) {
-  
-  ## setting sync key/states (local)
-  # SyncKey <- 33
-  # SyncState <- 1
 
   ## If Nested Freq - reset values for insert for that specific method
   if (method == "NF") {
     # data<- nest_freq_ready
-    
-    ## pulling data frame of species code, qualifier, speciesName, commonName, 
-    ## and 20 columns with associated nested numbers (0,1,2,3,or NA)
+    # method <- "NF"
+    # FK_Event <- checked_PK_Event
+    # Transect <- belt_num
+    # SampleNumber <- "NULL"
+    # Element <- "NULL"
+    # SubElement <- "NULL"
+    # SpeciesQualifier <- "NULL"
+    # FieldQualifier <- "NULL"
+    # cParameter <- "NULL"
+    # cParameter2 <- "NULL"
+    # cParameter3 <- "NULL"
+    # nValue <- "NULL"
+    # nValue2 <- "NULL"
+    # nValue3 <- "NULL"
+    # cValue <- "NULL"
+    # cValue2 <- "NULL"
+    # cValue3 <- "NULL"
+    # SyncKey <- 33
+    # SyncState <- 1
+    # power_mode <- FALSE
     
     ## data validation check function
     data_quality_data_frame(data)
     
-    ## sample data is col 5:25 (T1-T20) usually
     ## last column is a summary column
     sample_data <- data[5:(ncol(data) - 1)]
     
     d <- 1
     while (d < nrow(data) + 1) {
- 
-      ## START OF NEW CODE----
-      # Initialize a list to store data frames
-      species_added_list <- vector("list", nrow(data))
-      # Loop over rows of data
-      for (d in seq_len(nrow(data))) {
-        # Gather each species and qualifier
-        sp <- as.character(data[d, 1])
-        qualifier <- as.character(data[d, 2])
-        
-        # Create a temporary data frame
-        temp_table <- data.frame(sp = sp, qualifier = qualifier)
-        
-        # Store the data frame in the list
-        species_added_list[[d]] <- temp_table
-      }
       
-      # Combine all data frames into one
-      species_added <<- do.call(rbind, species_added_list)
-      
-      ## END OF NEW CODE----
-      
+      ## Error Checking ----
       ## message for data log for species in VGS check
       if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for NF belt#", Transect," - ",file_on))
       ## message for data log for species qualifier length
       if (nchar(data[d, ][2]) > 20) print(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",file_on))
       
-      ## stop app if not in Power Mode
+      ## stop app if not in Power Mode ->
       if (power_mode == FALSE) {
-        ## alerts for app stoppages --------------------------------------------
+        ## alerts for app stoppages
         ## Species not in VGS .db species list = stop()
         if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) {
           ## message for data log for species in VGS check
@@ -1257,7 +1230,6 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
         }
         
         if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for NF belt#", Transect," - ",file_on))
-        
         ## Check length of species qualifier = stop() if over 20 char
         ## print message for qualifier error
         if (nchar(data[d, ][2]) > 20) print(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",file_on))
@@ -1268,10 +1240,8 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
         }
         ## stop app
         if (nchar(data[d, ][2]) > 20) stop(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",file_on))
-        ## end of checks to stop app for nested freq ---------------------------
-      
-      } ## end of if in power mode 
-      
+      } ## end of if in power mode
+      ## End of Error checking ----
       
       ## for each species - format if Species Qualifier is not null
       if (data[d, ][2] != "NULL") {
@@ -1284,60 +1254,13 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
       
       ## each col / sample (starts at column 5)
       s <- 1
-      while (s < ncol(sample_data) + 1) {
-        if (!is.na(sample_data[d, s])) {
-          PK_Sample <- GUID()
-          
-          ## trim white space for numbers
-          Element<- as.numeric(str_trim(sample_data[d, s]))
-          
-          insert_sample <- paste0("INSERT INTO Sample
-           (PK_Sample
-           ,FK_Event
-           ,FK_Species
-           ,Transect
-           ,SampleNumber
-           ,Element
-           ,SubElement
-           ,FieldSymbol
-           ,SpeciesQualifier
-           ,FieldQualifier
-           ,cParameter
-           ,cParameter2
-           ,cParameter3
-           ,nValue
-           ,nValue2
-           ,nValue3
-           ,cValue
-           ,cValue2
-           ,cValue3
-           ,SyncKey
-           ,SyncState)
-     VALUES
-           (", PK_Sample, ",", FK_Event, ",'", toupper(data[d, ][[1]]), "',", Transect, ",", s, ",", Element, ",", SubElement, ",'", toupper(data[d, ][[1]]), "',", data[d, ][2], ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
-          
-          ## insert NF data
-          dbExecute(mydb, insert_sample)
-        }
-        ## move to next sample
-        s <- s + 1
-      }
       
-      ## move to next row/species
-      d <- d + 1
-    }
-    
-    ## need to mark SYS_NONE if nothing in frame but did it ->
-    ## after all species inserted - go back and check for sys_nones
-    s <- 1
-    while (s < ncol(sample_data) + 1) {
-      ## check if data
-      is_there_data <- !is.na(sample_data[s])
-      ## if at least one true -> don't add anything
-      sys_none_check <- grep("TRUE", is_there_data)
-      ## if = 0 -> add SYS_NONE to sample# s
-      if (length(sys_none_check) == 0) {
+      while (s < ncol(sample_data) + 1) {
+        
         PK_Sample <- GUID()
+        
+        ## trim white space for numbers
+        Element<- as.numeric(str_trim(sample_data[d, s]))
         
         insert_sample <- paste0("INSERT INTO Sample
            (PK_Sample
@@ -1362,19 +1285,65 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
            ,SyncKey
            ,SyncState)
      VALUES
+           (", PK_Sample, ",", FK_Event, ",'", toupper(data[d, ][[1]]), "',", Transect, ",", s, ",", Element, ",", SubElement, ",'", toupper(data[d, ][[1]]), "',", data[d, ][2], ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
+        
+        if (!is.na(sample_data[d, s])) {
+          ## insert NF data
+          dbExecute(mydb, insert_sample)
+        }
+        ## move to next sample
+        s <- s + 1
+      }
+      
+      ## move to next row/species
+      d <- d + 1
+    }
+    
+    ## after all species inserted - go back and check for sys_none
+    s <- 1
+    while (s < ncol(sample_data) + 1) {
+      ## check if data
+      is_there_data <- !is.na(sample_data[s])
+      ## if at least one true -> don't add anything
+      sys_none_check <- grep("TRUE", is_there_data)
+      ## if = 0 -> add SYS_NONE to sample# s
+      if (length(sys_none_check) == 0) {
+        PK_Sample <- GUID()
+
+        insert_sample <- paste0("INSERT INTO Sample
+           (PK_Sample
+           ,FK_Event
+           ,FK_Species
+           ,Transect
+           ,SampleNumber
+           ,Element
+           ,SubElement
+           ,FieldSymbol
+           ,SpeciesQualifier
+           ,FieldQualifier
+           ,cParameter
+           ,cParameter2
+           ,cParameter3
+           ,nValue
+           ,nValue2
+           ,nValue3
+           ,cValue
+           ,cValue2
+           ,cValue3
+           ,SyncKey
+           ,SyncState)
+     VALUES
            (", PK_Sample, ",", FK_Event, ",'SYS_NONE',", Transect, ",", s, ",1,", SubElement, ",'SYS_NONE',NULL,", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
-        
-        ## testing
-        see_me<<- insert_sample
-        
+
         ## insert NF data
         dbExecute(mydb, insert_sample)
       }
       s <- s + 1
     }
+    
     print("Nested Freq inserted...")
   }
-  
+
   ## If Ground Cover - reset values for insert for that specific method
   if (method == "GC-tally") {
     # data<- gc_ready
@@ -1436,6 +1405,17 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     d <- 1
     while (d < length(data) + 1) {
       PK_Sample <- GUID()
+      
+      if (is.na(Transect[d]) || is.na(SampleNumber[d]) || is.na(Element[d]) || is.na(gc_random[d])) {
+        print("GC insert error - NA's exist -> too many GC points?")
+        
+        shinyalert("GC Insert Error", "NA's exist, too many GC points?", type = "error",
+                   confirmButtonCol = T, confirmButtonText = "I will fix this later",
+                   immediate = T)
+        
+        Sys.sleep(10)
+        stop(paste0("GC insert error for ",site_name," - ",belt_num))
+      }
       
       insert_sample <- paste0("INSERT INTO Sample
            (PK_Sample
@@ -1514,9 +1494,18 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
         
       } ## end of if in power mode 
       
+      ## Surface Cover / 'S' options -> Specific to Protocols
+      ## if species can be a gc or canopy and if before a basal hit - add 'S'
       
-      ## if 'Surface' / 'S' , need to add for insert statment!
-      
+      ## for USFS R4 BTNF - 'L' and 'WL'
+      if ((ServerKey == "USFS R4-BT") &&
+          (data$Species[d] == "G_$8UEFABAVX9" || data$Species[d] == "G_$R4RTL5LFIN")) {
+        cParameter <- paste0("'Surface'")
+      } else {
+        cParameter <- paste0("NULL")
+      }
+      #View(data)
+
       ## add ground cover check?? make sure species in sheet is basal?
       
       ## also need to track what is being entered for QA/QC after like Freq...

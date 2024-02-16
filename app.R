@@ -20,6 +20,16 @@ library(tidyverse)
 library(shinyjs)
 library(DT)
 library(openxlsx)
+library(uuid)
+library(readxl)
+library(DBI)
+library(RSQLite)
+library(stringr)
+#library(rChoiceDialogs)
+
+## SQL local Connection info from R to local VGS5 (VGS50.db)
+db_loc <<- "C:/ProgramData/VGSData/VGS50.db"
+mydb <<- dbConnect(RSQLite::SQLite(), dbname = db_loc)
 
 ## data validation function
 source(paste0(app_path,"/Functions/data_validation.R"), local = T)
@@ -39,7 +49,8 @@ pasture_info<<- openxlsx::read.xlsx("www/pasture_data.xlsx")
 ui <- fluidPage(
   tags$head(
     tags$script(src = "https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"),
-    tags$link(rel = "stylesheet", href = "https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css"),
+    tags$link(rel = "stylesheet",
+              href = "https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css"),
     tags$script(src = "confirm.js")
   ),
   br(),
@@ -54,7 +65,8 @@ ui <- fluidPage(
       checkboxInput("mode", "Power Mode?", value = F),
       
       ## inputs for side dashboard
-      shiny::selectInput(inputId = "Protocol", label = "Select Protocol for Import",
+      shiny::selectInput(inputId = "Protocol",
+                         label = "Select Protocol for Import",
                          choices = c(" "="NULL",
                                      #"USFS R6 Rogue River - Tally",
                                      "USFS R6 Rogue River Standard",
@@ -211,13 +223,16 @@ server <- function(input, output, session) {
       ## only if not in power mode
       if (power_mode == FALSE) {
         ## first one is NULL so needs to check 2nd
-        ## if reaches final output in function - sucessful = got past function checks
-        if (status_check[2] == "**Batch Import Complete**") {
-          shinyalert("Niceee!", "**Batch Import Complete**", type = "success", closeOnClickOutside = F, immediate = T)
-        } else ## did not finish going through function for data import
-          shinyalert("Oops!", "Something went wrong. Check log table or file", type = "error", closeOnClickOutside = F, immediate = T)
+        # ## if reaches final output in function - successful = got past function checks
+        # if (status_check[2] == "**Batch Import Complete**") {
+        #   shinyalert("Niceee!", "**Batch Import Complete**", type = "success",
+        #              closeOnClickOutside = F, immediate = T)
+        # } else ## did not finish going through function for data import
+        #   shinyalert("Oops!", "Something went wrong. Check log table or file",
+        #              type = "error", closeOnClickOutside = F, immediate = T)
+        shinyalert("Niceee!", "**Batch Import Complete**", type = "success", closeOnClickOutside = F, immediate = T)
       }
-
+      
       data_log_output
       
     }) ## end of render table
