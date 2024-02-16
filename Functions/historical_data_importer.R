@@ -38,7 +38,7 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     ## alert for data import start -> if identical, no data selected
     shinyalert("No Data Selected", "Refresh the page and choose a file!",
                imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
-               imageWidth = 100, imageHeight = 100, type = "error", 
+               imageWidth = 100, imageHeight = 100, type = "error", immediate = T,
                timer = 3500)
     ## wait 5 seconds, then stop the script
     Sys.sleep(5)
@@ -59,7 +59,7 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     shinyalert("...is running in POWER MODE", "All data will try to be forced into the VGS database",
                imageUrl = "https://portal.vgs.arizona.edu/Content/Images/VGS_DarkGreen.png",
                imageWidth = 100, imageHeight = 100, type = "success", closeOnClickOutside = T,
-               showConfirmButton = F,timer = 3500)
+               showConfirmButton = F,timer = 3500, immediate = T)
   }
   
   ## reading in sheets to list
@@ -614,7 +614,8 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   FK_Type_Protocol <- tolower(FK_Type_Protocol)
   
   if (length(FK_Type_Protocol) == 0) {
-    shinyalert("Missing Protocol!", paste0("Import protocol ",ProtocolName," into VGS first and try again"), type = "error")
+    shinyalert("Missing Protocol!", paste0("Import protocol ",ProtocolName," into VGS first and try again"),
+               type = "error", immediate = T)
     Sys.sleep(5)
   }
   
@@ -904,7 +905,8 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
     FK_Type_Protocol <- TypeList_info$`quote(PK_Type)`
     
     if (length(FK_Type_Protocol) == 0) {
-      shinyalert("Missing Protocol!", paste0("Import protocol ",ProtocolName_2," into VGS first and try again"), type = "error")
+      shinyalert("Missing Protocol!", paste0("Import protocol ",ProtocolName_2," into VGS first and try again"),
+                 type = "error", immediate = T)
       Sys.sleep(5)
     }
     
@@ -1225,7 +1227,9 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
           ## message for data log for species in VGS check
           print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect," - ",file_on))
           ## alert for species
-          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect," - ",file_on), type = "error")
+          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(data[d, ][[1]]),
+                                                   " not in VGS db for belt#", Transect," - ",file_on),
+                     type = "error", immediate = T)
           Sys.sleep(15)
         }
         
@@ -1235,7 +1239,10 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
         if (nchar(data[d, ][2]) > 20) print(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",file_on))
         ## pop up warning
         if (nchar(data[d, ][2]) > 20) {
-          shinyalert("Species Qualifier too long!", paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (>20) for belt#", Transect," - ",file_on), type = "error")
+          shinyalert("Species Qualifier too long!", paste0("Species: ", toupper(data[d, ][[1]]),
+                                                           " Qualifier is too long (>20) for belt#",
+                                                           Transect," - ",file_on), type = "error",
+                     immediate = T)
           Sys.sleep(20)
         }
         ## stop app
@@ -1484,7 +1491,10 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
           ## message for sp_check log for species in VGS check
           print(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for belt#", sp_check[d, ][[1]]," - ",file_on))
           ## alert for species
-          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for LPI belt#", sp_check[d, ][[1]]," - ",file_on), type = "error")
+          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(sp_check[d, ][[3]]),
+                                                   " not in VGS db for LPI belt#",
+                                                   sp_check[d, ][[1]]," - ",file_on),
+                     type = "error", immediate = T)
           Sys.sleep(15)
         }
         
@@ -1579,7 +1589,10 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
           ## message for sp_check log for species in VGS check
           print(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for belt#", sp_check[d, ][[1]]," - ",file_on))
           ## alert for species
-          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for LPI belt#", sp_check[d, ][[1]]," - ",file_on), type = "error")
+          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(sp_check[d, ][[3]]),
+                                                   " not in VGS db for LPI belt#",
+                                                   sp_check[d, ][[1]]," - ",file_on),
+                     type = "error", immediate = T)
           Sys.sleep(15)
         }
         
