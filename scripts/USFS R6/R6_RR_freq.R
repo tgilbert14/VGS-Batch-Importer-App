@@ -17,14 +17,24 @@ if (nrow(nf_data) == 0) {
 if (nrow(nf_data) > 0) {
   ## save as data frame
   nf_data <- as.data.frame(nf_data)
+  
+  ## trim white spaces
+  nf_data<- nf_data %>%
+    mutate_if(is.character, str_trim)
+  nf_data<- nf_data %>%
+    mutate_if(is.numeric, str_trim)
+  
   ## row 2 = Qualifiers(SpeciesQ/FieldQ) -> NA should be NULL
   nf_data[, 2][is.na(nf_data[, 2])] <- "NULL"
-  ## change all 4's to 0's -> 0 means it is in the largest frame
-  nf_data[nf_data == 4] <- 0
+  
+  ##zeros need to be NA's first
+  nf_data[nf_data == trimws(0)] <- NA
   
   ## get rid of rows if have a species but has no hits (sum of zero for freq)
   nest_freq_ready <- nf_data %>% filter(nf_data$...25 != 0)
-  # View(nest_freq_ready)
+  
+  ## then change all 4's to 0's -> 0 means it is in the largest frame
+  nf_data[nf_data == trimws(4)] <- 0
   
   ## searching for specific term for specific protocol
   term <- "Standard"

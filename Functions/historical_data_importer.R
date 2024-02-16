@@ -1205,9 +1205,9 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     ## data validation check function
     data_quality_data_frame(data)
     
-    ## last column is a summary column
+    ## last column is a summary column (for most)
     sample_data <- data[5:(ncol(data) - 1)]
-    
+
     d <- 1
     while (d < nrow(data) + 1) {
       

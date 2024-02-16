@@ -281,7 +281,7 @@ if (length(grep("Nested Frequency", active_sheets[x]))==1) {
   start_gc<- grep("Ground Cover",raw_data[[1]])
   
   freq_data_raw<- historical_raw_data[c((start_freq+2):start_gc-1),c(find_sp_data_col:ncol(historical_raw_data))]
-
+  ## must have code - get rid of empty rows
   nf_data<- freq_data_raw %>% 
     filter(!is.na(freq_data_raw[1]))
   
@@ -304,17 +304,32 @@ if (length(grep("Nested Frequency", active_sheets[x]))==1) {
   if (nrow(nf_data) > 0) {
     ## save as data frame
     nf_data <- as.data.frame(nf_data)
-    ## row 2 = Qualifiers(SpeciesQ/FieldQ) -> NA should be NULL
-    #nf_data[, 2][is.na(nf_data[, 2])] <- "NULL"
-    ## change all 0's to NA (specific to this data)
-    nf_data[nf_data == 0] <- NA
-    ## then change all 4's to 0's -> 0 means it is in the largest frame
-    nf_data[nf_data == 4] <- 0
+   
+    ## trim spaces!
+    nf_data<- nf_data %>%
+      mutate_if(is.character, str_trim)
+    nf_data<- nf_data %>%
+      mutate_if(is.numeric, str_trim)
     
-    ## not doing this...
-    ## get rid of rows if have a species but has no hits (sum of zero for freq)
-    ##nest_freq_ready <- nf_data %>% filter(nf_data$...25 != 0)
+    ##zeros need to be NA's first
+    nf_data[nf_data == trimws(0)] <- NA
  
+    ## looking at totals to filter out no data and get sum
+    add_sum_col<- nf_data[3:(ncol(nf_data))]
+    cols.num <- c("...4","...5","...6","...7","...8","...9","...10","...11",
+                  "...12","...13","...14","...15","...16","...17","...18",
+                  "...19","...20","...21","...22","...23")
+    ## convert to numeric to get sum
+    suppressWarnings(add_sum_col[cols.num] <- sapply(add_sum_col[cols.num],as.numeric))
+    Sum<- rowSums(x = add_sum_col, na.rm = T)
+    nf_data<- cbind(nf_data,Sum)
+    
+    nf_data<- nf_data %>% 
+      filter(Sum > 0)
+
+    ## then change all 4's to 0's -> 0 means it is in the largest frame
+    nf_data[nf_data == trimws(4)] <- 0
+    
     ## making all codes upper case
     nf_data[,1]<- toupper(nf_data[,1])
     
