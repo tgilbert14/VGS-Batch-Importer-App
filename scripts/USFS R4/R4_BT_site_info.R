@@ -66,10 +66,10 @@ site_folder_info<- pasture_names %>%
   filter(USFS_Code == usfs_code)
 
 if (nrow(site_folder_info)==0) {
-  shinyalert("SiteName error for file name!", paste0("Could not find numeric site name in USFS shapefile - ",usfs_code),
-             type = "error", confirmButtonCol = T, confirmButtonText = "I'll fix this later",
-             immediate = T)
-  #Sys.sleep(10)
+  # shinyalert("SiteName error for file name!", paste0("Could not find numeric site name in USFS shapefile - ",usfs_code),
+  #            type = "error", confirmButtonCol = T, confirmButtonText = "I'll fix this later",
+  #            immediate = T)
+
   ## print for log
   print(paste0("Could not find site name in USFS shapefile ",usfs_code))
   ##stop app
