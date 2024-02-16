@@ -52,3 +52,5 @@ species_count<- species_count %>%
 
 write.xlsx(species_count, paste0(app_path,"/www/Conflicts/species_count.xlsx"))
 file.show(paste0(app_path,"/www/Conflicts/species_count.xlsx"))
+
+

@@ -63,6 +63,7 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       checkboxInput("mode", "Power Mode?", value = F),
+      checkboxInput("qaqc", "Use Species Replace?", value = F),
       
       ## inputs for side dashboard
       shiny::selectInput(inputId = "Protocol",

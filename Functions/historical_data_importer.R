@@ -1207,6 +1207,20 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     ## data validation check function
     data_quality_data_frame(data)
     
+    ## Species replace file if box checked
+    if (input$qaqc == TRUE) {
+      sp_replace_file<- openxlsx::read.xlsx("www/SpeciesReplace.xlsx")
+      
+      k=1
+      while (k < nrow(sp_replace_file)+1) {
+        data$...2<- sub(pattern = paste0("^",sp_replace_file$OldCode[k],"$"),
+                        replacement = paste0(sp_replace_file$NewCode[k]),
+                        x = data$...2)
+        k=k+1
+      }
+    }
+    ## End of qaqc species replace file
+    
     ## last column is a summary column (for most)
     sample_data <- data[5:(ncol(data) - 1)]
 
