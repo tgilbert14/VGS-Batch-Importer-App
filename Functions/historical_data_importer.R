@@ -1213,7 +1213,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
       
       ## Error Checking ----
       ## message for data log for species in VGS check
-      if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for NF belt#", Transect," - ",file_on))
+      if (length(grep(paste0("^",toupper(data[d, ][[1]]),"$"), vgs_species_list$PK_Species, value = T)) == 0) print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for NF belt#", Transect," - ",file_on))
       ## message for data log for species qualifier length
       if (nchar(data[d, ][2]) > 20) print(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",file_on))
       
@@ -1221,7 +1221,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
       if (power_mode == FALSE) {
         ## alerts for app stoppages
         ## Species not in VGS .db species list = stop()
-        if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) {
+        if (length(grep(paste0("^",toupper(data[d, ][[1]]),"$"), vgs_species_list$PK_Species, value = T)) == 0) {
           ## message for data log for species in VGS check
           print(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for belt#", Transect," - ",file_on))
           ## alert for species
@@ -1229,7 +1229,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
           Sys.sleep(15)
         }
         
-        if (length(grep(toupper(data[d, ][[1]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for NF belt#", Transect," - ",file_on))
+        if (length(grep(paste0("^",toupper(data[d, ][[1]]),"$"), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(data[d, ][[1]]), " not in VGS db for NF belt#", Transect," - ",file_on))
         ## Check length of species qualifier = stop() if over 20 char
         ## print message for qualifier error
         if (nchar(data[d, ][2]) > 20) print(paste0("Species: ", toupper(data[d, ][[1]]), " Qualifier is too long (Max 20 char) for belt#", Transect," - ",file_on))
@@ -1480,7 +1480,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
       if (power_mode == FALSE) {
         ## alerts for app stoppages --------------------------------------------
         ## Species code not in VGS .db species list = stop()
-        if (length(grep(toupper(sp_check[d, ][[3]]), vgs_species_list$PK_Species, value = T)) == 0) {
+        if (length(grep(paste0("^",toupper(sp_check[d, ][[3]]),"$"), vgs_species_list$PK_Species, value = T)) == 0) {
           ## message for sp_check log for species in VGS check
           print(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for belt#", sp_check[d, ][[1]]," - ",file_on))
           ## alert for species
@@ -1488,7 +1488,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
           Sys.sleep(15)
         }
         
-        if (length(grep(toupper(sp_check[d, ][[3]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for LPI belt#", sp_check[d, ][[1]]," - ",file_on))
+        if (length(grep(paste0("^",toupper(sp_check[d, ][[3]]),"$"), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for LPI belt#", sp_check[d, ][[1]]," - ",file_on))
         
         ## end of checks to stop app for species -------------------------------
         
@@ -1575,7 +1575,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
       if (power_mode == FALSE) {
         ## alerts for app stoppages --------------------------------------------
         ## Species not in VGS .db species list = stop()
-        if (length(grep(toupper(sp_check[d, ][[3]]), vgs_species_list$PK_Species, value = T)) == 0) {
+        if (length(grep(paste0("^",toupper(sp_check[d, ][[3]]),"$"), vgs_species_list$PK_Species, value = T)) == 0) {
           ## message for sp_check log for species in VGS check
           print(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for belt#", sp_check[d, ][[1]]," - ",file_on))
           ## alert for species
@@ -1583,7 +1583,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
           Sys.sleep(15)
         }
         
-        if (length(grep(toupper(sp_check[d, ][[3]]), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for LPI belt#", sp_check[d, ][[1]]," - ",file_on))
+        if (length(grep(paste0("^",toupper(sp_check[d, ][[3]]),"$"), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for LPI belt#", sp_check[d, ][[1]]," - ",file_on))
         
         ## end of checks to stop app for species -------------------------------
         
