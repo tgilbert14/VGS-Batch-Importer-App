@@ -47,5 +47,8 @@ sp_count <- paste0("SELECT DISTINCT PK_Species, SpeciesName, CommonName, Species
 
 species_count<- dbGetQuery(mydb, sp_count)
 
+species_count<- species_count %>% 
+  arrange(SpeciesName)
+
 write.xlsx(species_count, paste0(app_path,"/www/Conflicts/species_count.xlsx"))
 file.show(paste0(app_path,"/www/Conflicts/species_count.xlsx"))
