@@ -1477,46 +1477,54 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
   ## If LPI - reset values for insert for that specific method
   if (method == "LPI") {
     # data<- temp_lpi
-    
+
     ## pulling data frame w/ Transect, Sample, Species, and SubElement
     
     ## data validation check function
     data_quality_data_frame(data)
 
-    d <- 1
-    while (d < nrow(data) + 1) {
+    ## filter to not check for gc - species only (GC are char 13)
+    sp_check<- data %>% 
+      filter(nchar(Species) != 13)
+    
+    sp_check_sp<- unique(sp_check$Species)
+    sp_num<- 1
+    while (sp_num < length(sp_check_sp)+1) {
       
-      ## filter to not check for gc - species only (GC are char 13)
-      sp_check<- data %>% 
-        filter(nchar(Species) != 13)
-      
-      ## ??
-      ## gather each species to track QA/QC species being added
-      # sp<<- sp_check[d, ][[3]]
-      # qualifier<<- data[d, ][2]
-      # temp_table<<- data.frame(sp=paste0(sp),qualifier=paste0(qualifier),from=paste0(file_on))
-      # species_added<<- rbind(species_added, temp_table)
-        
       ## stop app if not in Power Mode
       if (power_mode == FALSE) {
         ## alerts for app stoppages --------------------------------------------
         ## Species code not in VGS .db species list = stop()
-        if (length(grep(paste0("^",toupper(sp_check[d, ][[3]]),"$"), vgs_species_list$PK_Species, value = T)) == 0) {
+        if (length(grep(paste0("^",toupper(sp_check_sp[sp_num]),"$"), vgs_species_list$PK_Species, value = T)) == 0) {
           ## message for sp_check log for species in VGS check
-          print(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for belt#", sp_check[d, ][[1]]," - ",file_on))
+          print(paste0("Species: ", toupper(sp_check_sp[sp_num]), " not in VGS db for - ",file_on))
           ## alert for species
-          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(sp_check[d, ][[3]]),
-                                                   " not in VGS db for LPI belt#",
-                                                   sp_check[d, ][[1]]," - ",file_on),
+          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(sp_check_sp[sp_num]),
+                                                   " not in VGS db for - ",file_on),
                      type = "error", immediate = T)
           Sys.sleep(15)
         }
         
-        if (length(grep(paste0("^",toupper(sp_check[d, ][[3]]),"$"), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for LPI belt#", sp_check[d, ][[1]]," - ",file_on))
+        if (length(grep(paste0("^",toupper(sp_check_sp[sp_num]),"$"),vgs_species_list$PK_Species, value = T)) == 0){
+          stop(paste0("Species: ", toupper(sp_check_sp[sp_num])," not in VGS db for - ",file_on))
+        }
         
-        ## end of checks to stop app for species -------------------------------
-        
-      } ## end of if in power mode 
+        ## end of checks to stop app for species
+      } ## end of if in power mode
+      sp_num<- sp_num+1
+    }
+    
+
+    d <- 1
+    while (d < nrow(data) + 1) {
+
+      ## ------
+      ## species replace script here!!!
+      
+      
+      
+      
+      ## ------
       
       ## Surface Cover / 'S' options -> Specific to Protocols
       ## if species can be a gc or canopy and if before a basal hit - add 'S'
@@ -1578,80 +1586,6 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     # data<- temp_lpi
     
     ## get Transect, Sample, Species, Element, nValue, nValue2, nValue3
-    
-    ## data validation check function
-    data_quality_data_frame(data)
-    
-    d <- 1
-    while (d < nrow(data) + 1) {
-      
-      # ## gather each species and qualifier and track so we can QA/QC species being added
-      # sp<<- data[d, ][[1]]
-      # qualifier<<- data[d, ][2]
-      # temp_table<<- data.frame(sp=paste0(sp),qualifier=paste0(qualifier),from=paste0(file_on))
-      # species_added<<- rbind(species_added, temp_table)
-      
-      ## filter to not check for gc - species only
-      sp_check<- data %>% 
-        filter(nchar(Species) != 13)
-      
-      ## stop app if not in Power Mode
-      if (power_mode == FALSE) {
-        ## alerts for app stoppages --------------------------------------------
-        ## Species not in VGS .db species list = stop()
-        if (length(grep(paste0("^",toupper(sp_check[d, ][[3]]),"$"), vgs_species_list$PK_Species, value = T)) == 0) {
-          ## message for sp_check log for species in VGS check
-          print(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for belt#", sp_check[d, ][[1]]," - ",file_on))
-          ## alert for species
-          shinyalert("Species Not in VGS!", paste0("Species: ", toupper(sp_check[d, ][[3]]),
-                                                   " not in VGS db for LPI belt#",
-                                                   sp_check[d, ][[1]]," - ",file_on),
-                     type = "error", immediate = T)
-          Sys.sleep(15)
-        }
-        
-        if (length(grep(paste0("^",toupper(sp_check[d, ][[3]]),"$"), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(sp_check[d, ][[3]]), " not in VGS db for LPI belt#", sp_check[d, ][[1]]," - ",file_on))
-        
-        ## end of checks to stop app for species -------------------------------
-        
-      } ## end of if in power mode 
-      
-      ## also need to track what is being entered for QA/QC after like Freq...
-      
-      ## each col / sample insert
-      PK_Sample <- GUID()
-      
-      insert_sample <- paste0("INSERT INTO Sample
-           (PK_Sample
-           ,FK_Event
-           ,FK_Species
-           ,Transect
-           ,SampleNumber
-           ,Element
-           ,SubElement
-           ,FieldSymbol
-           ,SpeciesQualifier
-           ,FieldQualifier
-           ,cParameter
-           ,cParameter2
-           ,cParameter3
-           ,nValue
-           ,nValue2
-           ,nValue3
-           ,cValue
-           ,cValue2
-           ,cValue3
-           ,SyncKey
-           ,SyncState)
-     VALUES
-           (", PK_Sample, ",", FK_Event, ",'", data$Species[d],"',", data$Transect[d],",", data$Sample[d],",1,", data$SubElement[d],",'", data$Species[d],"',",SpeciesQualifier,",",FieldQualifier,",",cParameter,",",cParameter2,",",cParameter3,",1,", nValue2,",", nValue2,",",cValue,",",cValue2,",",cValue3,",",SyncKey,",", SyncState,")")
-      
-      ## insert NF data
-      dbExecute(mydb, insert_sample)
-      
-      ## move to next row/species
-      d <- d + 1
-    }
     
     print("LI data inserted...")
   }

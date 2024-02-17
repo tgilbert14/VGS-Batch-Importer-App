@@ -176,7 +176,7 @@ server <- function(input, output, session) {
                                 choices = filter_keys,
                                 multiple = F, selected = T))
       
-      updateSelectInput(inputId = "Protocol", label = paste0(input$Protocol, " selected!"))
+      updateSelectInput(inputId = "Protocol", label = paste0(input$Protocol, " Selected!"))
       removeUI("div:has(> #Protocol)")
       
     }
