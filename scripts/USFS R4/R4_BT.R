@@ -304,7 +304,10 @@ if (length(grep("Nested Frequency", active_sheets[x]))==1) {
   if (nrow(nf_data) > 0) {
     ## save as data frame
     nf_data <- as.data.frame(nf_data)
-   
+    
+    ## can only be max of columns (20 samples)
+    nf_data<- nf_data[,c(1:22)]
+
     ## trim spaces!
     nf_data<- nf_data %>%
       mutate_if(is.character, str_trim)
@@ -320,12 +323,13 @@ if (length(grep("Nested Frequency", active_sheets[x]))==1) {
                   "...12","...13","...14","...15","...16","...17","...18",
                   "...19","...20","...21","...22","...23")
     ## convert to numeric to get sum
-    suppressWarnings(add_sum_col[cols.num] <- sapply(add_sum_col[cols.num],as.numeric))
-    Sum<- rowSums(x = add_sum_col, na.rm = T)
-    nf_data<- cbind(nf_data,Sum)
+    add_sum_col[cols.num] <- sapply(add_sum_col[cols.num],as.numeric)
+
+    Sum_of_nesteds<- rowSums(x = add_sum_col, na.rm = T)
+    nf_data<- cbind(nf_data,Sum_of_nesteds)
     
     nf_data<- nf_data %>% 
-      filter(Sum > 0)
+      filter(Sum_of_nesteds > 0)
 
     ## then change all 4's to 0's -> 0 means it is in the largest frame
     nf_data[nf_data == trimws(4)] <- 0
@@ -414,6 +418,9 @@ EventName = 'Frequency (by quadrat)'")
     
     Event_guid_info <- DBI::dbGetQuery(mydb, find_event_guid)
     checked_PK_Event <- Event_guid_info$`quote(PK_Event)`[1]
+    
+    ## get rid of nf_data just in case...
+    rm(nf_data)
     
     ## insert nested freq data
     insert_data(data = nest_freq_ready, method = "NF", FK_Event = checked_PK_Event, Transect = belt_num, SyncKey = 33, SyncState = 1)
