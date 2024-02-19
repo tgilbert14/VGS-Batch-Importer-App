@@ -9,9 +9,14 @@ if (nrow(sp_conflicts) == 0) {
   sp_conflicts<- "No species conflicts found"
 }
 
-write.xlsx(sp_conflicts, paste0(app_path,"/www/Conflicts/r_sp_conflicts_",site_name,".xlsx"))
+sp_conflicts<- as.data.frame(sp_conflicts)
+
+sp_errors<- sp_conflicts %>% 
+  arrange(sp_conflicts)
+
+write.xlsx(sp_errors, paste0(app_path,"/www/Conflicts/sp_errors.xlsx"))
 ## open file
-file.show(paste0(app_path,"/www/Conflicts/r_sp_conflicts_",site_name,".xlsx"))
+file.show(paste0(app_path,"/www/Conflicts/sp_errors.xlsx"))
 #file.show(paste0(app_path,"/www/r_output.txt"))
 
 ## GC counts
