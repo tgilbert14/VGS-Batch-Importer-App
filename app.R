@@ -217,21 +217,20 @@ server <- function(input, output, session) {
       
       ## if in power mode - different message
       if (power_mode == TRUE) {
-        shinyalert("Finished (In Power Mode)", "Some data may be currupt, check log for errors", type = "warning")
+        ## message for output log, pop up species update file
+        print("Use 'SpeciesReplace.xlsx' to update species that need to be corrected")
+        file.show(paste0(app_path,"/www/SpeciesReplace.xlsx"))
+
+        shinyalert("Finished (In Power Mode)", "Some data may be currupt, check log for errors", type = "warning", immediate = T)
         print("Finished (In Power Mode): Some data may be currupt, check log for errors")
       }
       
       ## only if not in power mode
       if (power_mode == FALSE) {
-        ## first one is NULL so needs to check 2nd
-        # ## if reaches final output in function - successful = got past function checks
-        # if (status_check[2] == "**Batch Import Complete**") {
-        #   shinyalert("Niceee!", "**Batch Import Complete**", type = "success",
-        #              closeOnClickOutside = F, immediate = T)
-        # } else ## did not finish going through function for data import
-        #   shinyalert("Oops!", "Something went wrong. Check log table or file",
-        #              type = "error", closeOnClickOutside = F, immediate = T)
-        shinyalert("Niceee!", "**Batch Import Complete**", type = "success", closeOnClickOutside = F, immediate = T)
+        shinyalert("Niceee!", "**Batch Import Complete**",
+                   type = "success",
+                   closeOnClickOutside = F,
+                   immediate = T)
       }
       
       data_log_output
