@@ -73,8 +73,8 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     
     print(paste0("Moving to File ", batch_file, " : ",file_on))
 
-    shinyalert(paste0("Working on file #", batch_file," out of ",length(data_file)), file_on,
-               type = "success", immediate = T, showConfirmButton = T, closeOnClickOutside = T)
+    shinyalert(paste0("Working on file #", batch_file,"/",length(data_file)), file_on,
+               type = "success", immediate = T, showConfirmButton = T)
     
     ## read specific batch file
     active_sheets <- excel_sheets(data_file[batch_file])
