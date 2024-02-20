@@ -60,9 +60,10 @@ file.show(paste0(app_path, "/www/Conflicts/species_count.xlsx"))
 
 ## generating codes that need to be updated
 ## Create "www/SpeciesReplace.xlsx" file with error species
-if (nrow(sp_errors) > 0) {
+if (nrow(sp_errors) > 1) {
   r=1
   sp_codes_2_update<- list()
+  
   while (r < nrow(sp_errors)+1) {
     
     start_pos<- gregexpr("Species: ", sp_errors$`Species errors in VGS`[r])
@@ -74,7 +75,6 @@ if (nrow(sp_errors) > 0) {
     r=r+1
   }
 
-}
 sp_codes_2_update<- unique(sp_codes_2_update)
 sp_code_matrix<- matrix(sp_codes_2_update, nrow = length(sp_codes_2_update))
 sp_code_df<- as.data.frame(sp_code_matrix)
@@ -93,3 +93,4 @@ gu<- sub("\\$","",gu)
 gu<- sub("'","",gu)
 file.rename(from = paste0(app_path, "/www/SpeciesReplace.xlsx"), to = paste0(app_path, "/www/SpeciesReplaceBackups/SpeciesReplace",gu,".xlsx"))
 write.xlsx(sp_update_file, paste0(app_path, "/www/SpeciesReplace.xlsx"))
+}
