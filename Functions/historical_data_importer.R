@@ -1444,12 +1444,15 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
         
         shinyalert("GC Insert Error", "NA's exist, too many GC points?",
                    type = "error",
-                   confirmButtonCol = T, confirmButtonText = "I will fix this later",
+                   confirmButtonCol = T, confirmButtonText = "Fix me :(",
                    immediate = T
         )
         
-        Sys.sleep(10)
-        stop(paste0("GC insert error for ", site_name, " - ", belt_num))
+        ## stop app if not in Power Mode ->
+        if (power_mode == FALSE) {
+          stop(paste0("GC insert error for ", site_name, " - ", belt_num))
+        }
+        
       }
       
       insert_sample <- paste0("INSERT INTO Sample
@@ -1497,34 +1500,51 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     ## data validation check function
     data_quality_data_frame(data)
     
+    ## Species replace file if box checked
+    if (input$qaqc == TRUE) {
+      sp_replace_file <- openxlsx::read.xlsx("www/SpeciesReplace.xlsx")
+
+      k <- 1
+      while (k < nrow(sp_replace_file) + 1) {
+        data$Species <- sub(
+          pattern = paste0("^", sp_replace_file$OldCode[k], "$"),
+          replacement = paste0(sp_replace_file$NewCode[k]),
+          x = data$Species
+        )
+        k <- k + 1
+      }
+    }
+    ## End of qaqc species replace file
+    
     ## filter to not check for gc - species only (GC are char 13)
     sp_check <- data %>%
       filter(nchar(Species) != 13)
     
     sp_check_sp <- unique(sp_check$Species)
+    
     sp_num <- 1
     while (sp_num < length(sp_check_sp) + 1) {
+      
+      if (length(grep(paste0("^", toupper(sp_check_sp[sp_num]), "$"), vgs_species_list$PK_Species, value = T)) == 0) {
+        ## message for sp_check log for species in VGS check
+        print(paste0("Species: ", toupper(sp_check_sp[sp_num]), " not in VGS db for LPI - ", file_on))
+      }
+      
       ## stop app if not in Power Mode
       if (power_mode == FALSE) {
         ## alerts for app stoppages --------------------------------------------
         ## Species code not in VGS .db species list = stop()
         if (length(grep(paste0("^", toupper(sp_check_sp[sp_num]), "$"), vgs_species_list$PK_Species, value = T)) == 0) {
-          ## message for sp_check log for species in VGS check
-          print(paste0("Species: ", toupper(sp_check_sp[sp_num]), " not in VGS db for - ", file_on))
+          
           ## alert for species
           shinyalert("Species Not in VGS!", paste0(
             "Species: ", toupper(sp_check_sp[sp_num]),
-            " not in VGS db for - ", file_on
-          ),
-          type = "error", immediate = T
-          )
+            " not in VGS db for LPI - ", file_on
+          ), type = "error", immediate = T)
+          ## pause and then stop app
           Sys.sleep(15)
+          stop(paste0("Species: ", toupper(sp_check_sp[sp_num]), " not in VGS db for LPI - ", file_on))
         }
-        
-        if (length(grep(paste0("^", toupper(sp_check_sp[sp_num]), "$"), vgs_species_list$PK_Species, value = T)) == 0) {
-          stop(paste0("Species: ", toupper(sp_check_sp[sp_num]), " not in VGS db for - ", file_on))
-        }
-        
         ## end of checks to stop app for species
       } ## end of if in power mode
       sp_num <- sp_num + 1
@@ -1533,13 +1553,6 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     
     d <- 1
     while (d < nrow(data) + 1) {
-      ## ------
-      ## species replace script here!!!
-      
-      
-      
-      
-      ## ------
       
       ## Surface Cover / 'S' options -> Specific to Protocols
       ## if species can be a gc or canopy and if before a basal hit - add 'S'
