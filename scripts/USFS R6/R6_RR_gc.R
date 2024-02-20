@@ -71,7 +71,7 @@ if (nrow(gc_data) > 0) {
     w=w+1
   }
   ## for data log
-  print(paste0(length(hi2)," ground cover points found..."))
+  print(paste0(length(hi2)," ground cover points found - ",site_name))
   ## each belt should have 80 ground cover points
   tot_num_belts<- length(hi2)/80
   ## checking if belt number is whole number

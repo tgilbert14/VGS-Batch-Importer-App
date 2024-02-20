@@ -239,7 +239,7 @@ if (length(grep("Nested Frequency", active_sheets[x])) == 1) {
           ## if still nothing - does not exist
           if (length(find) == 0) {
             ## stop/error/alert if species not found
-            print(paste0("Species:", nf_data_and_common[[1]][move], " - '", nf_data_and_common[[3]][move], "' not found in VGS!"))
+            #print(paste0("Species: ", nf_data_and_common[[1]][move], " - '", nf_data_and_common[[3]][move], "' not found in VGS!"))
             new_sp_name <- "No species name found"
             new_common_name <- "No common name found"
           }
@@ -315,6 +315,22 @@ EventName = 'Frequency (by quadrat)'")
   temp_gc <- temp_gc %>%
     select(...2, number)
   
+  ## for data log
+  print(paste0(sum(as.numeric(temp_gc$number)), " ground cover points (Belt #",belt_num,") for ",site_name))
+  
+  ## if more than 80 ground cover points - scale down by %
+  if (sum(as.numeric(temp_gc$number)) > 80) {
+    
+    # Calculate the scaling factor (80 points)
+    scaling_factor <- 80 / sum(as.numeric(temp_gc$number))
+    
+    # Apply the scaling factor to the counts
+    temp_gc$number <- as.numeric(temp_gc$number) * scaling_factor
+    temp_gc$number <- round(temp_gc$number, 0)
+    ## for data log
+    print(paste0("ground cover points scaled by % to ",sum(as.numeric(temp_gc$number))," points"))
+  }
+ 
   ## updating names to GUIDS (PK)
   temp_gc$...2[temp_gc$...2 == "Vegetation"] <- "G_$QH0J18RPQ5"
   temp_gc$...2[temp_gc$...2 == "Bare Soil"] <- "G_$BFZ5XCBCA2"
@@ -341,9 +357,7 @@ EventName = 'Frequency (by quadrat)'")
     }
     w <- w + 1
   }
-  ## for data log
-  print(paste0(length(hi2), " ground cover points found..."))
-  
+
   ## searching for specific term for specific protocol
   ## same one as before...
   term <- "BTNF Range Monitoring"
