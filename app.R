@@ -132,11 +132,10 @@ server <- function(input, output, session) {
   ## help pop up
   observeEvent(input$help, {
     # Show a modal when the button is pressed
-    shinyalert("App works as follows...", "**Run app and select batch import excel files**
-    >Use Power Mode to get more info on data errors<
-    >Check QA/QC logs and fix mistakes<
-    >Update data sheets if needed<
-    >Re-run app again with corrected sheets<
+    shinyalert("App Workflow", "**Run app and select batch import excel files**
+    >Use 'Power Mode' to check for errors<
+    >Update SpeciesReplace.xlsx with corrected species codes<
+    >Re-run app in normal mode with Species Replace on<
     >Clean up folder and merge repeated sites<
     >Download Folder Structure from server and place sites in correct folder<
     >Run 'vgs_name_update.R' script in the Functions folder to create correct names (syncable folders only)<
