@@ -1,0 +1,18 @@
+>Create protocol for sample insert
+>Edit/Update generic electronic sheet for transcription OR
+Obtain historical sheets and evaluate if data can be wrangled
+>Create Client specific scripts for site info/creation, data wrangling
+per event type (e.g., LPI, freq, gc, ect.)
+>Update app UI/server for Forest/Region of data sheets
+>Imprort data in 'Power Mode', this bypasses many input errors and will
+generate a r_output file with errors to be fixed (e.g., species codes, gc counts, etc.)
+>Update SpeciesReplace sheet with species to override incorrect ones
+>Run in SpeciesReplace mode, see if any errors
+>May need to adjust individual sheets or deveop code to work with all imports or
+specific imports
+>Once all obvious errors corrected, run batch import with speciesReplace on
+>Send species count output file to POCs for any possible corrections
+>Check data for errors, pick ~10% of data and evaluate that the data is being inserted as expected
+>Merge sites with multiple years data (or develop script to merge them)
+>Run comparison reports to see for species conflicts (or develop script)
+>Create report for user to do a final species review?

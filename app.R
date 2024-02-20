@@ -8,7 +8,7 @@
 
 ## set environment path
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-app_path<<-getwd()
+app_path <<- getwd()
 
 ## global - libraries
 library(shiny)
@@ -25,65 +25,72 @@ library(readxl)
 library(DBI)
 library(RSQLite)
 library(stringr)
-#library(rChoiceDialogs)
+# library(rChoiceDialogs)
 
 ## SQL local Connection info from R to local VGS5 (VGS50.db)
 db_loc <<- "C:/ProgramData/VGSData/VGS50.db"
 mydb <<- dbConnect(RSQLite::SQLite(), dbname = db_loc)
 
 ## data validation function
-source(paste0(app_path,"/Functions/data_validation.R"), local = T)
+source(paste0(app_path, "/Functions/data_validation.R"), local = T)
 
 ## power mode will push past species insert error but reference them in output.log
-#power_mode=TRUE
-power_mode=FALSE
+# power_mode=TRUE
+power_mode <- FALSE
 ## test mode - TRUE to show DEV mode
-#test_mode=TRUE
-test_mode=FALSE
+# test_mode=TRUE
+test_mode <- FALSE
 
 ## read in xlsx file with USFS shapefile/naming info
-pasture_info<<- openxlsx::read.xlsx("www/pasture_data.xlsx")
+pasture_info <<- openxlsx::read.xlsx("www/pasture_data.xlsx")
 
 ## -----------------------------------------------------------------------------
-## Define UI 
+## Define UI
 ui <- fluidPage(
   tags$head(
     tags$script(src = "https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"),
-    tags$link(rel = "stylesheet",
-              href = "https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css"),
+    tags$link(
+      rel = "stylesheet",
+      href = "https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css"
+    ),
     tags$script(src = "confirm.js")
   ),
   br(),
   
   ## general theme
   theme = shinytheme("slate"),
-
   titlePanel("Historical Data Importer"),
-  
   sidebarLayout(
     sidebarPanel(
       checkboxInput("mode", "Power Mode?", value = F),
       checkboxInput("qaqc", "Use Species Replace?", value = F),
       
       ## inputs for side dashboard
-      shiny::selectInput(inputId = "Protocol",
-                         label = "Select Protocol for Import",
-                         choices = c(" "="NULL",
-                                     #"USFS R6 Rogue River - Tally",
-                                     "USFS R6 Rogue River Standard",
-                                     "USFS R4 BTNF Range Monitoring"),
-                         multiple = F, selected = F),
+      shiny::selectInput(
+        inputId = "Protocol",
+        label = "Select Protocol for Import",
+        choices = c(
+          " " = "NULL",
+          # "USFS R6 Rogue River - Tally",
+          "USFS R6 Rogue River Standard",
+          "USFS R4 BTNF Range Monitoring"
+        ),
+        multiple = F, selected = F
+      ),
       ## pop up UI's here after Protocol entry - see server side
       shiny::actionButton(inputId = "create", label = "Batch Import Data", width = "100%"),
       
       ## if test mode
       if (test_mode == TRUE) {
         ## dev box
-        box(width = '100%', solidHeader = F, collapsed = T,
-            selectInput(inputId = "devMode",
-                        label = "Dev Mode Options",
-                        choices = c(FALSE,"allotment","pasture","protocol","eventG","events","protocol_2","base","data_page1","wildcard")
-            ))
+        box(
+          width = "100%", solidHeader = F, collapsed = T,
+          selectInput(
+            inputId = "devMode",
+            label = "Dev Mode Options",
+            choices = c(FALSE, "allotment", "pasture", "protocol", "eventG", "events", "protocol_2", "base", "data_page1", "wildcard")
+          )
+        )
         ## end of dev box for test mode
       },
       
@@ -91,27 +98,30 @@ ui <- fluidPage(
       if (power_mode == TRUE) {
         ## power mode will push through all species errors, will have to go back and
         ## check log for errors! VGS events will be corrupt if errors occur on insert
-        box(width = '100%', solidHeader = F, collapsed = T,
-            selectInput(inputId = "powMode",
-                        label = "Power Mode?",
-                        choices = TRUE
-            ))
+        box(
+          width = "100%", solidHeader = F, collapsed = T,
+          selectInput(
+            inputId = "powMode",
+            label = "Power Mode?",
+            choices = TRUE
+          )
+        )
         ## end of power mode
       }
-      
     ), ## end of side bar panel
-   
+    
     ## output area of shiny app - box
-    shinydashboard::box(solidHeader = T, width = 8,
-                        actionButton(icon = icon("skull"), "help", " Help Me", width = '100%'),
-      tabsetPanel(type = "tabs",
-                  tabPanel(
-                    "Status...",
-                    withSpinner(tableOutput("status"))
-                  ) ## end of tab panal - status
+    shinydashboard::box(
+      solidHeader = T, width = 8,
+      actionButton(icon = icon("skull"), "help", " Help Me", width = "100%"),
+      tabsetPanel(
+        type = "tabs",
+        tabPanel(
+          "Status...",
+          withSpinner(tableOutput("status"))
+        ) ## end of tab panal - status
       ) ## end of tab set panal(s)
     ) ## end of box display
-    
   ) ## end of sidebar layout
 ) ## end of UI
 ## -----------------------------------------------------------------------------
@@ -122,16 +132,16 @@ server <- function(input, output, session) {
   ## help pop up
   observeEvent(input$help, {
     # Show a modal when the button is pressed
-    shinyalert("App works as follows...", "**Run app and select batch import excel files**
-    >Use Power Mode to get more info on data errors<
-    >Check QA/QC logs and fix mistakes<
-    >Update data sheets if needed<
-    >Re-run app again with corrected sheets<
+    shinyalert("App Workflow", "**Run app and select batch import excel files**
+    >Use 'Power Mode' to check for errors<
+    >Update SpeciesReplace.xlsx with corrected species codes<
+    >Re-run app in normal mode with Species Replace on<
     >Clean up folder and merge repeated sites<
     >Download Folder Structure from server and place sites in correct folder<
     >Run 'vgs_name_update.R' script in the Functions folder to create correct names (syncable folders only)<
     >Sync Data as in pieces until all data is uploaded<",
-               type = "info", size="l")
+               type = "info", size = "l"
+    )
   })
   
   ## initial NULL Value - keeps spinner from showing at app load
@@ -140,49 +150,55 @@ server <- function(input, output, session) {
   ## for UI drop downs ----
   observe({
     ## check power
-    power_mode<<- input$mode
+    power_mode <<- input$mode
     ## override test mode if selected
-    test_mode<<- input$devMode
+    test_mode <<- input$devMode
     
     ## if value is selected ->
     if (input$Protocol != "NULL") {
-
       ## changes input depending on Protocol selected
       if (input$Protocol == "USFS R6 Rogue River - Tally") {
-        p2 <- c("USFS R6 Rogue River Standard", "Not Allowed"="NULL")
-        filter_keys <- c("Rogue River-Siskiyou National Forests"="USFS R6-RR")
+        p2 <- c("USFS R6 Rogue River Standard", "Not Allowed" = "NULL")
+        filter_keys <- c("Rogue River-Siskiyou National Forests" = "USFS R6-RR")
       }
       if (input$Protocol == "USFS R6 Rogue River Standard") {
-        #p2 <- c("USFS R6 Rogue River - Tally", "NA"="NULL")
-        p2 <- c("Not Allowed"="NULL")
-        filter_keys <- c("Rogue River-Siskiyou National Forests"="USFS R6-RR")
+        # p2 <- c("USFS R6 Rogue River - Tally", "NA"="NULL")
+        p2 <- c("Not Allowed" = "NULL")
+        filter_keys <- c("Rogue River-Siskiyou National Forests" = "USFS R6-RR")
       }
       if (input$Protocol == "USFS R4 BTNF Range Monitoring") {
-        p2 <- c("Not Allowed"="NULL")
-        filter_keys <- c("Bridger-Teton National Forest"="USFS R4-BT")
+        p2 <- c("Not Allowed" = "NULL")
+        filter_keys <- c("Bridger-Teton National Forest" = "USFS R4-BT")
       }
       
       ## insert selection for protocol #2
-      insertUI(selector = "div:has(> #Protocol)",
-               where = "afterEnd",
-               ui = selectInput(inputId = "Protocol_2", label = "Select another protocol",
-                                choices = p2,
-                                multiple = F, selected = T))
+      insertUI(
+        selector = "div:has(> #Protocol)",
+        where = "afterEnd",
+        ui = selectInput(
+          inputId = "Protocol_2", label = "Select another protocol",
+          choices = p2,
+          multiple = F, selected = T
+        )
+      )
       
       ## insert selection for server Key for parsing data
-      insertUI(selector = "div:has(> #Protocol_2)",
-               where = "afterEnd",
-               ui = selectInput(inputId = "ServerKey", label = "Select Organization",
-                                choices = filter_keys,
-                                multiple = F, selected = T))
+      insertUI(
+        selector = "div:has(> #Protocol_2)",
+        where = "afterEnd",
+        ui = selectInput(
+          inputId = "ServerKey", label = "Select Organization",
+          choices = filter_keys,
+          multiple = F, selected = T
+        )
+      )
       
       updateSelectInput(inputId = "Protocol", label = paste0(input$Protocol, " Selected!"))
       removeUI("div:has(> #Protocol)")
-      
     }
   })
   ## end of UI drop downs ----
-
+  
   observeEvent(input$create, {
     req(input$Protocol)
     
@@ -190,37 +206,40 @@ server <- function(input, output, session) {
     sink("www/r_output.txt")
     
     ## pointing to VGS functions for batch data import
-    source(paste0(app_path,"/Functions/VGS_functions_R.R"), local = T)
-    source(paste0(app_path,"/Functions/historical_data_importer.R"), local = T)
+    source(paste0(app_path, "/Functions/VGS_functions_R.R"), local = T)
+    source(paste0(app_path, "/Functions/historical_data_importer.R"), local = T)
     read_import_data(Protocol = input$Protocol, ServerKey = input$ServerKey, Protocol_2 = input$Protocol_2)
     
     ## pop up for species errors in VGS
-    source(paste0(app_path,"/Functions/species_qaqc_check.R"), local = T)
+    source(paste0(app_path, "/Functions/species_qaqc_check.R"), local = T)
     
     ## close connections from local VGS db
     DBI::dbDisconnect(mydb)
     closeAllConnections()
     
-    d_process<- reactive({
-      data_log_output<- read.table("www/r_output.txt", header = T,
-                                   fill = T, check.names = F, row.names = NULL,
-                                   na.strings = T)
+    d_process <- reactive({
+      data_log_output <- read.table("www/r_output.txt",
+                                    header = T,
+                                    fill = T, check.names = F, row.names = NULL,
+                                    na.strings = T
+      )
     }) ## end of reactive data log
     
     output$status <- renderTable({
-      data_log_output<- d_process()
+      data_log_output <- d_process()
       req(data_log_output)
       
-      status_check<- substring(data_log_output[nrow(data_log_output),], 
-                               first = nchar(data_log_output[nrow(data_log_output),])-24,
-                               last = nchar(data_log_output[nrow(data_log_output),]))
+      status_check <- substring(data_log_output[nrow(data_log_output), ],
+                                first = nchar(data_log_output[nrow(data_log_output), ]) - 24,
+                                last = nchar(data_log_output[nrow(data_log_output), ])
+      )
       
       ## if in power mode - different message
       if (power_mode == TRUE) {
         ## message for output log, pop up species update file
         print("Use 'SpeciesReplace.xlsx' to update species that need to be corrected")
-        file.show(paste0(app_path,"/www/SpeciesReplace.xlsx"))
-
+        file.show(paste0(app_path, "/www/SpeciesReplace.xlsx"))
+        
         shinyalert("Finished (In Power Mode)", "Some data may be currupt, check log for errors", type = "warning", immediate = T)
         print("Finished (In Power Mode): Some data may be currupt, check log for errors")
       }
@@ -230,11 +249,11 @@ server <- function(input, output, session) {
         shinyalert("Niceee!", "**Batch Import Complete**",
                    type = "success",
                    closeOnClickOutside = F,
-                   immediate = T)
+                   immediate = T
+        )
       }
       
       data_log_output
-      
     }) ## end of render table
   }) ## end of observe event
   
