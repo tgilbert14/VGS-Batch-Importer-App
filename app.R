@@ -121,8 +121,10 @@ ui <- fluidPage(
       tabsetPanel(
         type = "tabs",
         tabPanel(
-          actionButton(icon = icon("skull"), "help", "", width = 40),
-          "Status...",
+          div(style = "display: flex; justify-content: flex-start;",  # This will align the button to the right
+              actionButton(inputId = "help", label = "", icon = icon("skull"), width = 40)
+          ),
+          #"Status...",
           withSpinner(tableOutput("status"))
         ) ## end of tab panal - status
       ) ## end of tab set panal(s)
@@ -269,9 +271,13 @@ server <- function(input, output, session) {
   }) ## end of observe event
   
   observeEvent(input$species_by_site, {
-    shinyalert("Sites Merged?", "Sites must be merged before you do this.",
-               type = "warning", immediate = T, animation = "slide-from-buttom",
-               confirmButtonText = "Opening Species Count File...")
+    shinyalert(title = "Sites should be merged before you do this!",
+               text = "Opening Species Count File...",
+               immediate = T, animation = "slide-from-buttom",
+               confirmButtonText = "Thanks...",
+               imageUrl = "images/plants.png", size = "m", imageWidth = 400, imageHeight = 200
+    )
+    
     Sys.sleep(1)
     ## Check all species added by Site
     sp_count_2 <- paste0(" SELECT DISTINCT SiteID, SpeciesName, SpeciesQualifier, PK_Species, CommonName, Count(PK_Species)  from Protocol
