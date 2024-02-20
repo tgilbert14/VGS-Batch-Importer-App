@@ -60,6 +60,8 @@ ui <- fluidPage(
   ## general theme
   theme = shinytheme("slate"),
   titlePanel("Historical Data Importer"),
+  br(),
+
   sidebarLayout(
     sidebarPanel(
       checkboxInput("mode", "Power Mode?", value = F),
@@ -79,7 +81,8 @@ ui <- fluidPage(
       ),
       ## pop up UI's here after Protocol entry - see server side
       shiny::actionButton(inputId = "create", label = "Batch Import Data", width = "100%"),
-      
+      br(),
+ 
       ## if test mode
       if (test_mode == TRUE) {
         ## dev box
@@ -110,27 +113,35 @@ ui <- fluidPage(
       }
     ), ## end of side bar panel
     
+
     ## output area of shiny app - box
     shinydashboard::box(
       solidHeader = T, width = 8,
-      actionButton(icon = icon("skull"), "help", " Help Me", width = "100%"),
+
       tabsetPanel(
         type = "tabs",
         tabPanel(
+          actionButton(icon = icon("skull"), "help", "", width = 40),
           "Status...",
           withSpinner(tableOutput("status"))
         ) ## end of tab panal - status
       ) ## end of tab set panal(s)
     ) ## end of box display
-  ) ## end of sidebar layout
+
+  ), ## end of sidebar layout
+  ## get species count by site after sites merged
+  shiny::actionButton(icon = icon("pagelines"), inputId = "species_by_site",
+                      label = "Count", width = 80)
 ) ## end of UI
 ## -----------------------------------------------------------------------------
 
 ## -----------------------------------------------------------------------------
 ## Define server logic
 server <- function(input, output, session) {
+
   ## help pop up
   observeEvent(input$help, {
+    
     # Show a modal when the button is pressed
     shinyalert("App Workflow", "**Run app and select batch import excel files**
     >Use 'Power Mode' to check for errors<
@@ -138,9 +149,9 @@ server <- function(input, output, session) {
     >Re-run app in normal mode with Species Replace on<
     >Clean up folder and merge repeated sites<
     >Download Folder Structure from server and place sites in correct folder<
-    >Run 'vgs_name_update.R' script in the Functions folder to create correct names (syncable folders only)<
-    >Sync Data as in pieces until all data is uploaded<",
-               type = "info", size = "l"
+    >Run 'vgs_name_update.R' script in the Functions folder to create correct names (syncable only)<
+    >Sync Data as in pieces until all data is uploaded<",immediate = T,
+               imageUrl = "images/anime.png", size = "m", imageWidth = 300, imageHeight = 200
     )
   })
   
@@ -256,6 +267,28 @@ server <- function(input, output, session) {
       data_log_output
     }) ## end of render table
   }) ## end of observe event
+  
+  observeEvent(input$species_by_site, {
+    shinyalert("Sites Merged?", "Sites must be merged before you do this.",
+               type = "warning", immediate = T, animation = "slide-from-buttom",
+               confirmButtonText = "Opening Species Count File...")
+    Sys.sleep(1)
+    ## Check all species added by Site
+    sp_count_2 <- paste0(" SELECT DISTINCT SiteID, SpeciesName, SpeciesQualifier, PK_Species, CommonName, Count(PK_Species)  from Protocol
+  INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
+  INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
+  INNER JOIN Site ON Site.PK_Site = Event.FK_Site
+  INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
+  INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
+  where List = 'NRCS'
+  group by SiteID, PK_Species, SpeciesName, CommonName, SpeciesQualifier
+  order by SiteID, SpeciesName, SpeciesQualifier, PK_Species, CommonName")
+    
+    species_count_2 <- dbGetQuery(mydb, sp_count_2)
+    
+    write.xlsx(species_count_2, paste0(app_path, "/www/Conflicts/species_count_by_site.xlsx"))
+    file.show(paste0(app_path, "/www/Conflicts/species_count_by_site.xlsx"))
+  })
   
   ## on session end -> make sure connections closed
   session$onSessionEnded(function() {
