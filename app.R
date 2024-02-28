@@ -296,6 +296,12 @@ server <- function(input, output, session) {
     file.show(paste0(app_path, "/www/Conflicts/species_count_by_site.xlsx"))
   })
   
+  ## clear variables on stop
+  onStop(function() {
+    vars_to_remove <- c(ls()[ls()!="nest_freq_ready"]) # all variables except
+    rm(list=vars_to_remove, envir=.GlobalEnv)
+  })
+  
   ## on session end -> make sure connections closed
   session$onSessionEnded(function() {
     suppressWarnings(DBI::dbDisconnect(mydb))
