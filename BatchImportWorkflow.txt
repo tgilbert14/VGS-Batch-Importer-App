@@ -12,7 +12,8 @@ generate a r_output file with errors to be fixed (e.g., species codes, gc counts
 specific imports
 >Once all obvious errors corrected, run batch import with speciesReplace on
 >Send species count output file to POCs for any possible corrections
->Check data for errors, pick ~10% of data and evaluate that the data is being inserted as expected
+>Check data for errors, pick ~5-10% of random data and intensly evaluate that the data
+is being inserted as expected (dependend on import size)
 >Merge sites with multiple years data (or develop script to merge them)
 >Run comparison reports to see for species conflicts (or develop script)
 >Create report for user to do a final species review?
