@@ -1,13 +1,14 @@
 ## Processing Nested Freq Data (GC on cover page for R6 RR batch)
 
 print(paste0("Parsing Data for Nested Freq..."))
-## selecting only data with no column names
-nf_data <- data_import[c(3:nrow(data_import)), c(1:ncol(data_import))]
+## selecting only data with no column names (-1 to get rid of sum column)
+nf_data <- data_import[c(3:nrow(data_import)), c(1:ncol(data_import)-1)]
 ## get rid of NA columns with no species listed
 nf_data <- nf_data %>%
   filter(!is.na(nf_data[1]))
 
-belt_num <- as.numeric(substr(active_sheets[x], nchar(active_sheets[x]), nchar(active_sheets[x])))
+trim_sheet_name <- trimws(active_sheets[x])
+belt_num <- as.numeric(substr(trim_sheet_name, nchar(trim_sheet_name), nchar(trim_sheet_name)))
 
 if (nrow(nf_data) == 0) {
   print(paste0("No Nested Freq for this Belt ", belt_num))
@@ -24,17 +25,41 @@ if (nrow(nf_data) > 0) {
   nf_data<- nf_data %>%
     mutate_if(is.numeric, str_trim)
   
-  ## row 2 = Qualifiers(SpeciesQ/FieldQ) -> NA should be NULL
+  ## if is NA will make NULL
   nf_data[, 2][is.na(nf_data[, 2])] <- "NULL"
   
-  ##zeros need to be NA's first
-  nf_data[nf_data == trimws(0)] <- NA
+  # ## zeros need to be NA's first
+  # nf_data[nf_data == trimws(0)] <- NA
+  # View(nf_data)
   
-  ## get rid of rows if have a species but has no hits (sum of zero for freq)
-  nest_freq_ready <- nf_data %>% filter(nf_data$...25 != 0)
+  ## redoing sum columns becuase some errors from user input
+  ## looking at totals to filter out no data and get sum
+  add_sum_col <- nf_data[5:(ncol(nf_data))]
+  cols.num <- c(
+    "...5", "...6", "...7", "...8", "...9", "...10", "...11",
+    "...12", "...13", "...14", "...15", "...16", "...17", "...18",
+    "...19", "...20", "...21", "...22", "...23", "...24"
+  )
+  ## convert to numeric to get sum
+  add_sum_col[cols.num] <- sapply(add_sum_col[cols.num], as.numeric)
+  
+  Sum_of_nesteds <- rowSums(x = add_sum_col, na.rm = T)
+  nf_data <- cbind(nf_data, Sum_of_nesteds)
+  
+  nf_data <- nf_data %>%
+    filter(Sum_of_nesteds > 0)
   
   ## then change all 4's to 0's -> 0 means it is in the largest frame
   nf_data[nf_data == trimws(4)] <- 0
+  
+  ## making all codes upper case
+  nf_data[, 1] <- toupper(nf_data[, 1])
+  
+  ## then change all 4's to 0's -> 0 means it is in the largest frame
+  nf_data[nf_data == trimws(4)] <- 0
+  
+  ## all columns except summary
+  nest_freq_ready <- nf_data[,c(1:ncol(nf_data))]
   
   ## searching for specific term for specific protocol
   term <- "Standard"
