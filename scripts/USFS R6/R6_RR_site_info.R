@@ -14,14 +14,15 @@ elevation <<- historical_raw_data[grep("elevat", historical_raw_data[[1]], ignor
 # elevation <- historical_raw_data[grep("elevation", historical_raw_data[[1]], ignore.case = TRUE),][[2]]
 slope <<- historical_raw_data[grep("slope", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
 aspect <<- historical_raw_data[grep("aspect", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
-# site_notes_1 <- historical_raw_data[grep("general", historical_raw_data[[1]], ignore.case = TRUE),][[2]]
+## site notes
 site_notes_1 <- historical_raw_data[grep("site notes", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
 site_notes_1 <- gsub('"', "", site_notes_1, fixed = T)
 site_notes_1 <- gsub("'", "", site_notes_1, fixed = T)
-# site_notes_2 <- historical_raw_data[grep("mlra", historical_raw_data[[1]], ignore.case = TRUE),][[2]]
+## event notes
 site_notes_2 <- historical_raw_data[grep("event note", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
 site_notes_2 <- gsub('"', "", site_notes_2, fixed = T)
 site_notes_2 <- gsub("'", "", site_notes_2, fixed = T)
+
 
 ## Formatting notes ---- change depending on batch data
 ## if site_notes_1 present
@@ -33,10 +34,11 @@ if (length(site_notes_1) == 0 || is.na(site_notes_1)) {
 }
 ## event notes
 if (length(site_notes_2) > 0 && !is.na(site_notes_2)) {
-  EventNotes <<- site_notes_2
+  EventNotes <<- paste0(site_notes_2," - Some of the ground cover data was imported into VGS from summary data sheets so Point Ground Cover totals reflects real totals but it is not known on what transects they occurred.")
 }
 if (length(site_notes_2) == 0 || is.na(site_notes_2)) {
-  EventNotes <<- "NULL"
+  EventNotes <<- "Some of the ground cover data was imported into VGS from summary data sheets so Point Ground Cover totals reflects real totals but it is not known on what transects they occurred."
+  #EventNotes <<- "NULL"
 }
 ## End of formatting notes
 
