@@ -122,7 +122,7 @@ ui <- fluidPage(
         type = "tabs",
         tabPanel(
           div(style = "display: flex; justify-content: flex-start;",  # This will align the button to the right
-              actionButton(inputId = "help", label = "", icon = icon("skull"), width = 40)
+              actionButton(inputId = "help", label = "", icon = icon("shrimp"), width = 40)
           ),
           #"Status...",
           withSpinner(tableOutput("status"))
@@ -133,7 +133,10 @@ ui <- fluidPage(
   ), ## end of sidebar layout
   ## get species count by site after sites merged
   shiny::actionButton(icon = icon("pagelines"), inputId = "species_by_site",
-                      label = "Count", width = 80)
+                      label = "Count", width = 80),
+  ## check species against USDA plant database for that state
+  shiny::actionButton(icon = icon("wand-magic-sparkles"), inputId = "usda_check",
+                      label = "Species Check", width = 140)
 ) ## end of UI
 ## -----------------------------------------------------------------------------
 
@@ -270,6 +273,7 @@ server <- function(input, output, session) {
     }) ## end of render table
   }) ## end of observe event
   
+  ## Count button click
   observeEvent(input$species_by_site, {
     shinyalert(title = "Sites should be merged before you do this!",
                text = "Opening Species Count File...",
@@ -296,12 +300,90 @@ server <- function(input, output, session) {
     file.show(paste0(app_path, "/www/Conflicts/species_count_by_site.xlsx"))
   })
   
-  ## clear variables on stop
-  onStop(function() {
-    vars_to_remove <- c(ls()[ls()!="nest_freq_ready"]) # all variables except
-    rm(list=vars_to_remove, envir=.GlobalEnv)
+  ## Species Check click
+  observeEvent(input$usda_check, {
+    
+    plant_files<- list.files("www/sp_lists_USDA/")
+    state_names<- substr(plant_files, 0 , nchar(plant_files)-4)
+    
+    shinyalert("Select a state",
+               imageUrl = "images/cowboy2.png", size = "m", imageWidth = 500,
+               imageHeight = 300, html = TRUE,
+               text = tagList(selectInput(inputId = "st_pick",
+                                          label = "This will compare species by state (USDA)",
+                                          choices = c("",unlist(state_names)), selected = F, multiple = F)),
+               confirmButtonText = "ok", confirmButtonCol = "#70FF19")
+    
+    output$status <- renderText({
+      req(nchar(input$st_pick)>0)
+      
+      ## get species list from database
+      vgs_species_list_q <- paste0("SELECT PK_Species,SpeciesName, CommonName from Species where List = 'NRCS'")
+      vgs_species_list <- dbGetQuery(mydb, vgs_species_list_q)
+      
+      ## state selection and file read
+      selected_state<- input$st_pick
+      selected_state_file_path<- paste0(app_path,"/www/sp_lists_USDA/",selected_state,".csv")
+      
+      st_plant_data<- read_csv(selected_state_file_path)
+      
+      sp_codes_avaliable_by_state<- as.data.frame(unique(st_plant_data$symbol))
+      
+      ## Check all species added
+      sp_query <- paste0("SELECT DISTINCT PK_Species, SpeciesName from Protocol
+  INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
+  INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
+  INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
+  INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
+  where List = 'NRCS'")
+      
+      species_in_db <- dbGetQuery(mydb, sp_query)
+      
+      sp_in_data<- as.data.frame(unique(species_in_db$PK_Species))
+      
+      not_in_state<- setdiff(species_in_db$PK_Species,sp_codes_avaliable_by_state$`unique(st_plant_data$symbol)`)
+      
+      ## get rid of allowed VGS 2 codes
+      updated_not_in<- not_in_state[grep("^2", not_in_state, invert = T)]
+      
+      updated_not_in<- as.data.frame(updated_not_in)
+      names(updated_not_in)[1]<- "PK_Species"
+      
+      updated_not_in_2<- left_join(updated_not_in, vgs_species_list)
+      
+      ## if species name is one name -> genus only (Aster)
+      ## then check if there are species that start with it 'Aster sp...'
+      
+      # ## joining to VGS names for codes to see if species match (ASTER)
+      # names(sp_codes_avaliable_by_state)[1]<- "PK_Species"
+      # spe<- left_join(sp_codes_avaliable_by_state, vgs_species_list)
+      # View(spe)
+      # ## compare species names
+      # setdiff(updated_not_in_2$SpeciesName, spe$SpeciesName)
+      # spe$SpeciesName
+      
+      
+      
+      ## check genus in db vs if genus is in state
+      
+      ## ----
+      
+      
+      names(updated_not_in_2)[1]<- paste0("Species not in USDA plant list for ",selected_state)
+      write.xlsx(updated_not_in_2, paste0(app_path, "/www/Conflicts/not_in_state.xlsx"))
+      file.show(paste0(app_path, "/www/Conflicts/not_in_state.xlsx"))
+     
+      print(paste0(selected_state," Selected and checked"))
+    })
+  
   })
   
+  ## clear variables on stop
+  onStop(function() {
+    vars_to_remove <- c(ls()[ls()!=c("nest_freq_ready","power_mode","mydb")]) # all variables except
+    rm(list=vars_to_remove, envir=.GlobalEnv)
+  })
+
   ## on session end -> make sure connections closed
   session$onSessionEnded(function() {
     suppressWarnings(DBI::dbDisconnect(mydb))
