@@ -15,17 +15,13 @@ sp_errors <- sp_conflicts %>%
   arrange(sp_conflicts)
 
 write.xlsx(sp_errors, paste0(app_path, "/www/Conflicts/sp_errors.xlsx"))
-## open file
 file.show(paste0(app_path, "/www/Conflicts/sp_errors.xlsx"))
-# file.show(paste0(app_path,"/www/r_output.txt"))
 
 ## GC counts
 #file_sum <- unique(qaqc[grep("Moving to File", qaqc[[1]]), ])
 gc_sum <- qaqc[grep("ground cover points", qaqc[[1]]), ]
 #gc_check <- rbind(file_sum, gc_sum)
 write.xlsx(gc_sum, paste0(app_path, "/www/Conflicts/gc_counts.xlsx"))
-## open file
-# file.show(paste0(app_path,"/www/Conflicts/gc_counts_",site_name,".xlsx"))
 
 ## queries to check data in VGS .db
 ## list of all species added - do any of them need to be changed?
@@ -95,5 +91,17 @@ file.rename(from = paste0(app_path, "/www/SpeciesReplace.xlsx"), to = paste0(app
 write.xlsx(sp_update_file, paste0(app_path, "/www/SpeciesReplace.xlsx"))
 }
 
+## GC missing or too much
+gc_miss <- qaqc[grep("missing or too", qaqc[[1]]), ]
+if (nrow(gc_miss)>1) {
+  write.xlsx(gc_miss, paste0(app_path, "/www/Conflicts/gc_missing_or_too_much.xlsx"))
+  file.show(paste0(app_path,"/www/Conflicts/gc_missing_or_too_much.xlsx"))
+}
 
+## GC % errors
+gc_perc_errors <- qaqc[grep("GC % sums", qaqc[[1]]), ]
+if (nrow(gc_miss)>0) {
+  write.xlsx(gc_perc_errors, paste0(app_path, "/www/Conflicts/gc_perc_errors.xlsx"))
+  file.show(paste0(app_path,"/www/Conflicts/gc_perc_errors.xlsx"))
+}
 
