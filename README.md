@@ -10,4 +10,4 @@ Re-run app again with corrected sheets
 Clean up folder and merge repeated sites
 Download Folder Structure from server and place sites in correct folder
 Run 'vgs_name_update.R' script in the Functions folder to create correct names (syncable folders only)
-Sync Data as in pieces until all data is uploaded
+Sync Data as in pieces until all data is uploaded.
