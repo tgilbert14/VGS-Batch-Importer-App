@@ -68,7 +68,7 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
   
   ## reading in sheets to list
   historical_data <<- list()
-  ## go through each batch file
+  ## go through each batch file starting w/ 1
   batch_file <<- 1
   while (batch_file < length(data_file) + 1) {
     # cat("----->")
@@ -77,6 +77,12 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     
     print(paste0("Moving to File ", batch_file, " : ", file_on))
     
+    #print("Setting 'add_to_belt' var to NA")
+    ## var to update belt # per file
+    add_to_belt<<- NA
+    
+    #print(paste0(add_to_belt," = add_to_belt"))
+
     shinyalert(paste0("Working on file #", batch_file, "/", length(data_file)), file_on,
                type = "success", immediate = T, showConfirmButton = T
     )
@@ -108,40 +114,42 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
       suppressMessages(historical_data[[sheet_name]] <- read_excel(data_file[batch_file], sheet = sheet_name, col_names = F, trim_ws = T))
       print(paste0("Saving ", sheet_name))
     }
+    
     active_sheets <<- active_sheets
     ## go through each sheet 'x'
     x <<- 1
     
-    while (x < length(historical_data) + 1) {
+    while (x < (length(active_sheets) + 1)) {
       ## get all info from each excel sheet -> Reading one sheet at a time
       data_import <<- historical_data[[x]]
+      
+      ## messages for testing
+      print(paste("Length of this data tabs =",length(active_sheets)))
+      print(paste("x =",x))
+      #print(head(data_import))
       
       ## function for key info and data import
       batch_import(historical_raw_data = data_import)
       ## move to next tab
       x <<- x + 1
+      
       ## move site to correct folder or create parent folders
+      print("next excel tab...")
+      
+      # if (x == 7) {
+      #   stop("test here...")
+      # }
+      
     }
     
+    print("next batch file...")
     ## saving completed files for output
-    output_list[batch_file, 1] <<- batch_file
-    output_list[batch_file, 2] <<- data_file[[batch_file]]
-    
-    ## got rid of this, query instead
-    # ## saving species added for QA/QC ->
-    # ## get unique values by site and arrange
-    # sp_added<<- unique(species_added)
-    # sp_added_final<<- sp_added %>%
-    #   arrange(sp, qualifier)
-    # ## join to find species name as well
-    # names(sp_added_final)[1] <<- "PK_Species"
-    # sp_added_final<<- left_join(sp_added_final, vgs_species_list_more)
-    # write.xlsx(sp_added_final, paste0(app_path,"/www/SpeciesAddedByFile/Species_added_QAQC_",site_name,".xlsx"))
-    
+    #output_list[batch_file, 1] <<- batch_file
+    #output_list[batch_file, 2] <<- data_file[[batch_file]]
+
     ## move to next batch file
     batch_file <<- batch_file + 1
     
-    print("next batch file...")
     
     if (batch_file == length(data_file) + 1) {
       print("**Batch Import Complete**")
@@ -225,7 +233,11 @@ batch_import <<- function(historical_raw_data) {
     }
     ## End of variable manipulation
     
-    print(paste0("Inserting data from ", active_sheets[x]))
+    ## get rid of problematic characters for site name
+    site_name <<- gsub("'", "", site_name, fixed = T)
+    site_name <<- gsub("&", "-", site_name, fixed = T)
+    
+    print(paste0("Inserting data from ", active_sheets[x]," for ",site_name))
     
     ## create site and data event
     create_site(
@@ -238,6 +250,7 @@ batch_import <<- function(historical_raw_data) {
   ## OTHER TABS ---- other than the first and not "site Meta Data" tabs
   ## if not site meta data of on site metadata page
   if (x != 1) {
+    
     print(paste0("Moving to/checking ", active_sheets[x]))
     
     ## RR key - nested freq - check protocols as well
@@ -272,10 +285,6 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   if (site_notes != "NULL" || is.na(site_notes) || length(site_notes) == 0) {
     site_notes <- paste0("'", site_notes, "'")
   }
-  
-  # if (DateEstablished != "NULL" || is.na(DateEstablished) || length(DateEstablished) == 0) {
-  #   DateEstablished <- paste0("'", DateEstablished, "'")
-  # }
   
   ## Guid for site pk
   PK_Site <- GUID()
@@ -398,12 +407,27 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   ## formatting names/labels
   pasture <- paste0(pasture, " Pasture")
   allotment <- paste0(allotment, " Allotment")
-  forest <- paste0(forest, " National Forest")
   ranger_district <- paste0(ranger_district, " Ranger District")
+  forest <- paste0(forest, " National Forest")
+  
   pasture <- str_to_title(pasture)
   allotment <- str_to_title(allotment)
-  forest <- str_to_title(forest)
   ranger_district <- str_to_title(ranger_district)
+  forest <- str_to_title(forest)
+  
+  ## get rid of problematic characters for SQL
+  pasture <- gsub("'", "", pasture, fixed = T)
+  pasture <- gsub("&", "-", pasture, fixed = T)
+  
+  allotment <- gsub("'", "", allotment, fixed = T)
+  allotment <- gsub("&", "-", allotment, fixed = T)
+  
+  ranger_district <- gsub("'", "", ranger_district, fixed = T)
+  ranger_district <- gsub("&", "-", ranger_district, fixed = T)
+  
+  forest <- gsub("'", "", forest, fixed = T)
+  forest <- gsub("&", "-", forest, fixed = T)
+  
   
   ## creates folder under "local" folder - Default to Local
   parent <- paste0("X'11111111111111111111111111111111'")
@@ -1321,6 +1345,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
            (", PK_Sample, ",", FK_Event, ",'", toupper(data[d, ][[1]]), "',", Transect, ",", s, ",", Element, ",", SubElement, ",'", toupper(data[d, ][[1]]), "',", data[d, ][2], ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
         
         if (!is.na(sample_data[d, s])) {
+          
           ## insert NF data
           dbExecute(mydb, insert_sample)
         }
@@ -1368,9 +1393,11 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
      VALUES
            (", PK_Sample, ",", FK_Event, ",'SYS_NONE',", Transect, ",", s, ",1,", SubElement, ",'SYS_NONE',NULL,", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
         
-        ## insert NF data
-        dbExecute(mydb, insert_sample)
+        
+      ## insert NF data
+      dbExecute(mydb, insert_sample)
       }
+      
       s <- s + 1
     }
     
@@ -1418,8 +1445,11 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
      VALUES
            (", PK_Sample, ",", FK_Event, ",'", data[d, ][[1]], "',", Transect, ",", SampleNumber, ",", Element, ",", SubElement, ",'", data[d, ][[1]], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",", nValue, ",", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
       
-      ## insert GC data
-      dbExecute(mydb, insert_sample)
+      ## does not insert if POWER MODE
+      if (power_mode == "FALSE") {
+        ## insert GC data
+        dbExecute(mydb, insert_sample)
+      }
       d <- d + 1
     }
     
@@ -1439,22 +1469,24 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     while (d < length(data) + 1) {
       PK_Sample <- GUID()
       
-      if (is.na(Transect[d]) || is.na(SampleNumber[d]) || is.na(Element[d]) || is.na(gc_random[d])) {
-        print("GC insert error - NA's exist -> too many GC points?")
-        
-        shinyalert("GC Insert Error", "NA's exist, too many GC points?",
-                   type = "error",
-                   confirmButtonCol = T, confirmButtonText = "Fix me :(",
-                   immediate = T
-        )
-        
-        ## stop app if not in Power Mode ->
-        if (power_mode == FALSE) {
-          stop(paste0("GC insert error for ", site_name, " - ", belt_num))
+      if (power_mode == "FALSE") {
+        if (is.na(Transect[d]) || is.na(SampleNumber[d]) || is.na(Element[d]) || is.na(gc_random[d])) {
+          print("GC insert error - NA's exist -> too many GC points?")
+          
+          shinyalert("GC Insert Error", "NA's exist, too many GC points?",
+                     type = "error",
+                     confirmButtonCol = T, confirmButtonText = "Fix me :(",
+                     immediate = T
+          )
+          Sys.sleep(10)
+          ## stop app if not in Power Mode ->
+          if (power_mode == FALSE) {
+            stop(paste0("GC insert error for ", site_name, " - ", belt_num))
+          }
+          
         }
-        
       }
-      
+
       insert_sample <- paste0("INSERT INTO Sample
            (PK_Sample
            ,FK_Event
@@ -1480,10 +1512,13 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
      VALUES
            (", PK_Sample, ",", FK_Event, ",'", gc_random[d], "',", Transect[d], ",", SampleNumber[d], ",", Element[d], ",", SubElement, ",'", gc_random[d], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
       
-      # test<<- insert_sample
-      
-      ## insert GC data
-      dbExecute(mydb, insert_sample)
+      ## does not insert if POWER MODE
+      ## had to add to create report otherwise app crashes
+      if (power_mode == "FALSE") {
+        ## insert GC data
+        dbExecute(mydb, insert_sample)
+      }
+
       d <- d + 1
     }
     
@@ -1598,8 +1633,10 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
      VALUES
            (", PK_Sample, ",", FK_Event, ",'", data$Species[d], "',", data$Transect[d], ",", data$Sample[d], ",1,", data$SubElement[d], ",'", data$Species[d], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
       
-      ## insert NF data
+     
+      ## insert LPI data
       dbExecute(mydb, insert_sample)
+      
       
       ## move to next row/species
       d <- d + 1
@@ -1615,7 +1652,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     
     ## get Transect, Sample, Species, Element, nValue, nValue2, nValue3
     
-    print("LI data inserted...")
+    print("LI data inserted... maybe...")
   }
   
   ## If clipping Production...
