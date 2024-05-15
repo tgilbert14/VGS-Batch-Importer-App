@@ -52,12 +52,13 @@ if (nrow(gc_data) > 0) {
   temp_gc[temp_gc == "Moss"] <- "G_MOSS"
   temp_gc[temp_gc == "Soil"] <- "G_$YKLSYQARFV"
   
+  
   ## checking if whole number or decimal (hits vs % for gc)
   whole_num_check<- unique(as.numeric(temp_gc[,2]) == round(as.numeric(temp_gc[,2]),0))
   whole_num_check_confirm<- unique(grep("FALSE", whole_num_check, value = T))
 
-  ## if this is FALSE this means decimals percent, so may be % cover not hits
-  if (whole_num_check_confirm == "FALSE" && (length(whole_num_check_confirm)!= 0)) {
+  ## if this is FALSE this means decimals percent, so may be % cover not hits - or if it is exactly 100
+  if ((whole_num_check_confirm == "FALSE" && length(whole_num_check_confirm)!= 0) || sum(as.numeric(temp_gc[,2]))==100) {
     print("GC % detected instead of hits")
     ## add decimals up - should be 100% - make col numeric
     col_as_num<- sapply(temp_gc[2], as.numeric)
@@ -100,6 +101,7 @@ if (nrow(gc_data) > 0) {
     }
     w=w+1
   }
+  
   ## for data log
   print(paste0(length(hi2)," ground cover points found - ",site_name))
   ## each belt should have 80 ground cover points
