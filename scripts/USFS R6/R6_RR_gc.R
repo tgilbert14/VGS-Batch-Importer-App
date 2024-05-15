@@ -13,7 +13,7 @@ find_event_guid <- paste0("Select DISTINCT quote(PK_Event), ProtocolName from Pr
     AND EventName = 'Point Ground Cover'")
 
 Event_guid_info <- DBI::dbGetQuery(mydb, find_event_guid)
-checked_PK_Event <- Event_guid_info$`quote(PK_Event)`[1]
+checked_PK_Event_gc <- Event_guid_info$`quote(PK_Event)`[1]
 
 ## GC tally data - done on meta-data page
 print(paste0("Parsing Data for GC Tally Data..."))
@@ -30,7 +30,7 @@ if (nrow(gc_data) == 0) {
   ## update event notes to remark no gc data for this event
   update_event_notes <- paste0("Update Protocol
                Set Notes = 'No Ground Cover data for this event'
-               Where PK_Protocol=", checked_PK_Event)
+               Where PK_Protocol=", checked_PK_Event_gc)
   dbExecute(mydb, update_event_notes)
 }
 
@@ -51,6 +51,36 @@ if (nrow(gc_data) > 0) {
   temp_gc[temp_gc == "Pavement"] <- "G_$QGJSWR6KN5"
   temp_gc[temp_gc == "Moss"] <- "G_MOSS"
   temp_gc[temp_gc == "Soil"] <- "G_$YKLSYQARFV"
+  
+  ## checking if whole number or decimal (hits vs % for gc)
+  whole_num_check<- unique(as.numeric(temp_gc[,2]) == round(as.numeric(temp_gc[,2]),0))
+  whole_num_check_confirm<- unique(grep("FALSE", whole_num_check, value = T))
+
+  ## if this is FALSE this means decimals percent, so may be % cover not hits
+  if (whole_num_check_confirm == "FALSE" && (length(whole_num_check_confirm)!= 0)) {
+    print("GC % detected instead of hits")
+    ## add decimals up - should be 100% - make col numeric
+    col_as_num<- sapply(temp_gc[2], as.numeric)
+    sum_per_gc<- colSums(col_as_num)
+    ## if not totaled to 100% give message
+    if (sum_per_gc != 100) {
+      print(paste0(
+        "GC % sums to ",sum_per_gc,", needs to total to 100% for ",file_on))
+      
+      shinyalert("GC % detected", paste0(
+        "GC % sums to ",sum_per_gc,", needs to total to 100% for ",file_on),
+        type = "error", immediate = T)
+      ## if in power mode just power through to get qa/qc report
+    }
+    
+    ## assuming is 100% at this point - processing hit #'s based on percent
+    ## set default total number here based on protocol/client
+    Belt_predicted_gc_hits<- 80
+    
+    rounded_hits<- round(col_as_num*(Belt_predicted_gc_hits/100),0)
+    ## replace with rounded hit numbers per transect
+    temp_gc$...5<- rounded_hits
+  }
   
   w=1
   ## create a list of all the species entries
@@ -78,9 +108,11 @@ if (nrow(gc_data) > 0) {
   is_whole_number<- tot_num_belts%%1==0
   
   if (!is_whole_number) {
-    stop("GC adds up to ",length(hi2)," - missing or too much GC points")
+    print(paste0("GC adds up to ",length(hi2)," - missing or too much for ",site_name))
+    ## rounding up belt
+    tot_num_belts<- ceiling(tot_num_belts)
   }
-
+  
   belts<- 1
   first_belt<- rep(belts,80)
   first_SampleNumber_raw <- sort.int(rep(c(1:20),4))
@@ -105,7 +137,13 @@ if (nrow(gc_data) > 0) {
     belts=belts+1
   }
 
-  belt_numbers <- next_belt
+  ## if only 1 belt
+  if (tot_num_belts == 1) {
+    belt_numbers <- first_belt
+  } else {
+    belt_numbers <- next_belt
+  }
+  
   SampleNumber_raw <- first_SampleNumber_raw
   ## setting other variables -->
   ## 4 per Sample - 80 per transect
@@ -116,6 +154,6 @@ if (nrow(gc_data) > 0) {
   ## insert gc data
   insert_data(data = hi2, method = "GC", Transect = belt_numbers, 
               SampleNumber = SampleNumber_raw, Element = Element_raw, 
-              FK_Event = checked_PK_Event, SyncKey = 33, SyncState = 1)
+              FK_Event = checked_PK_Event_gc, SyncKey = 33, SyncState = 1)
   }
 }
