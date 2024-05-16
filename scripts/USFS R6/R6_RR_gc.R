@@ -57,6 +57,7 @@ if (nrow(gc_data) > 0) {
   whole_num_check<- unique(as.numeric(temp_gc[,2]) == round(as.numeric(temp_gc[,2]),0))
   whole_num_check_confirm<- unique(grep("FALSE", whole_num_check, value = T))
 
+  ## everything in this if is only done if we think the gc is % rather than total count #
   ## if this is FALSE this means decimals percent, so may be % cover not hits - or if it is exactly 100
   if ((whole_num_check_confirm == "FALSE" && length(whole_num_check_confirm)!= 0) || sum(as.numeric(temp_gc[,2]))==100) {
     print("GC % detected instead of hits")
@@ -79,9 +80,25 @@ if (nrow(gc_data) > 0) {
     Belt_predicted_gc_hits<- 80
     
     rounded_hits<- round(col_as_num*(Belt_predicted_gc_hits/100),0)
+    
+    ## after rounding if over 80 per transect, minus 1 (least effect on largest value)
+    ## if greater than 1 difference, need to look at file by file for errors
+    
+    if (sum(rounded_hits) > 80) {
+      max_value<- grep(pattern = max(rounded_hits), x = rounded_hits)
+      rounded_hits[max_value][1] <- rounded_hits[max_value][1]-1
+    }
+    
+    ## same for 1 value under 80, but add 1 to max
+    if (sum(rounded_hits) < 80) {
+      max_value<- grep(pattern = max(rounded_hits), x = rounded_hits)
+      rounded_hits[max_value][1] <- rounded_hits[max_value][1]+1
+    }
+    
     ## replace with rounded hit numbers per transect
     temp_gc$...5<- rounded_hits
   }
+  ## end of converting % values to estimated count #'s
   
   w=1
   ## create a list of all the species entries
@@ -110,7 +127,7 @@ if (nrow(gc_data) > 0) {
   is_whole_number<- tot_num_belts%%1==0
   
   if (!is_whole_number) {
-    print(paste0("GC adds up to ",length(hi2)," - missing or too much for ",site_name))
+    print(paste0("Warning, GC adds up to ",length(hi2)," - double check ",site_name))
     ## rounding up belt
     tot_num_belts<- ceiling(tot_num_belts)
   }
