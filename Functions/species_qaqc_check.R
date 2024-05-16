@@ -49,22 +49,23 @@ if (nrow(ground_covers_used_by_events)>1) {
 }
 
 ## Check all species added
-sp_count <- paste0("SELECT DISTINCT PK_Species, SpeciesName, CommonName, SpeciesQualifier, Count(PK_Species)  from Protocol
+sp_count <- paste0("SELECT DISTINCT SiteID, Protocol.Date, PK_Species, Species.NewSynonym as 'Updated Code', SpeciesName, CommonName, SpeciesQualifier, Count(PK_Species)  from Protocol
   INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
   INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
+  INNER JOIN Site ON Site.PK_Site = Event.FK_Site
   INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
   INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
-  where List = 'NRCS'
-  group by PK_Species, SpeciesName, CommonName, SpeciesQualifier")
+  where List = 'NRCS' and eventName LIKE '%Frequency%'
+  group by SiteID, Protocol.Date, PK_Species, SpeciesName, CommonName, SpeciesQualifier")
 
 species_count <- dbGetQuery(mydb, sp_count)
 
-species_count <- species_count %>%
-  arrange(SpeciesName)
+# species_count <- species_count %>%
+#   arrange(SpeciesName)
 
-write.xlsx(species_count, paste0(app_path, "/www/Conflicts/species_count.xlsx"))
+write.xlsx(species_count, paste0(app_path, "/www/Conflicts/species_count_by_site.xlsx"))
 if (nrow(species_count)>1) {
-  file.show(paste0(app_path, "/www/Conflicts/species_count.xlsx"))
+  file.show(paste0(app_path, "/www/Conflicts/species_count_by_site.xlsx"))
 }
 
 ## generating codes that need to be updated
@@ -123,12 +124,15 @@ if (nrow(gc_miss)>0) {
 }
 
 ## Script to pull siteclass names for folders to look for spelling errors to fix
-# siteClass <- paste0("SELECT ClassName from SiteClass")
-# 
-# siteClassNames <- dbGetQuery(mydb, siteClass)
-# 
+siteClass <- paste0("SELECT ClassName from SiteClass
+                    order by ClassName")
+
+siteClassNames <- dbGetQuery(mydb, siteClass)
+
 # nameCheck_RD <- siteClassNames %>%
 #   filter(str_detect(ClassName, fixed("Ranger")))
-# 
-# rd_check<- unique(nameCheck_RD)
+
+className_check <- unique(siteClassNames)
+write.xlsx(className_check, paste0(app_path, "/www/SiteClassNameChecks/FolderNames.xlsx"))
+file.show(paste0(app_path,"/www/SiteClassNameChecks/FolderNames.xlsx"))
 
