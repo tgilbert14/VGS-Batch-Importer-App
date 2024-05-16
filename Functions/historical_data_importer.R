@@ -1346,8 +1346,12 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
         
         if (!is.na(sample_data[d, s])) {
           
-          ## insert NF data
-          dbExecute(mydb, insert_sample)
+          ## only insert if not in power mode
+          if (power_mode == "FALSE") {
+            ## insert NF data
+            dbExecute(mydb, insert_sample)
+          }
+          
         }
         ## move to next sample
         s <- s + 1
@@ -1393,9 +1397,12 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
      VALUES
            (", PK_Sample, ",", FK_Event, ",'SYS_NONE',", Transect, ",", s, ",1,", SubElement, ",'SYS_NONE',NULL,", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
         
+        ## only insert if not in power mode
+        if (power_mode == "FALSE") {
+          ## insert NF data
+          dbExecute(mydb, insert_sample)
+        }
         
-      ## insert NF data
-      dbExecute(mydb, insert_sample)
       }
       
       s <- s + 1
@@ -1633,10 +1640,11 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
      VALUES
            (", PK_Sample, ",", FK_Event, ",'", data$Species[d], "',", data$Transect[d], ",", data$Sample[d], ",1,", data$SubElement[d], ",'", data$Species[d], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
       
-     
-      ## insert LPI data
-      dbExecute(mydb, insert_sample)
-      
+      ## only insert if not in power mode
+      if (power_mode == "FALSE") {
+        ## insert LPI data
+        dbExecute(mydb, insert_sample)
+      }
       
       ## move to next row/species
       d <- d + 1

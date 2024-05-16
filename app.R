@@ -34,7 +34,7 @@ mydb <<- dbConnect(RSQLite::SQLite(), dbname = db_loc)
 ## data validation function
 source(paste0(app_path, "/Functions/data_validation.R"), local = T)
 
-## power mode will push past species insert error but reference them in output.log
+## power mode will push past species insert errors but reference them in output.log
 # power_mode=TRUE
 power_mode <- FALSE
 ## test mode - TRUE to show DEV mode
@@ -256,8 +256,8 @@ server <- function(input, output, session) {
         print("Use 'SpeciesReplace.xlsx' to update species that need to be corrected")
         file.show(paste0(app_path, "/www/SpeciesReplace.xlsx"))
         
-        shinyalert("Finished (In Power Mode)", "Some data may be currupt, check log for errors", type = "warning", immediate = T)
-        print("Finished (In Power Mode): Some data may be currupt, check log for errors")
+        shinyalert("Finished (In Power Mode)", "No data inserted into events, check log & QA/QC reports for errors", type = "warning", immediate = T)
+        print("Finished (In Power Mode): No data inserted into events, check log & QA/QC reports for errors")
       }
       
       ## only if not in power mode
