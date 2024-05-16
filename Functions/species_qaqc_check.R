@@ -1,7 +1,8 @@
-## read in output log
+## read in output log for qa/qc reports ->
 qaqc <- read_csv(paste0(app_path, "/www/r_output.txt"))
-#View(qaqc)
+View(qaqc)
 
+## looking for species conflicts in log
 sp_conflicts <- unique(qaqc[grep("Species", qaqc[[1]], ignore.case = T), ])
 
 names(sp_conflicts)[1] <- "Species errors in VGS"
@@ -15,29 +16,37 @@ sp_errors <- sp_conflicts %>%
   arrange(sp_conflicts)
 
 write.xlsx(sp_errors, paste0(app_path, "/www/Conflicts/sp_errors.xlsx"))
-file.show(paste0(app_path, "/www/Conflicts/sp_errors.xlsx"))
+if (nrow(sp_errors)>1) {
+  file.show(paste0(app_path, "/www/Conflicts/sp_errors.xlsx"))
+}
 
-## GC counts
-#file_sum <- unique(qaqc[grep("Moving to File", qaqc[[1]]), ])
-
+## looking for ground cover counts in log
 gc_sum <- qaqc[grep("ground cover points", qaqc[[1]]), ]
 names(gc_sum)[1] <- "Ground Cover Counts"
-#gc_check <- rbind(file_sum, gc_sum)
+## report generated and opened if data
 write.xlsx(gc_sum, paste0(app_path, "/www/Conflicts/gc_counts.xlsx"))
+if (nrow(gc_sum)>1) {
+  file.show(paste0(app_path, "/www/Conflicts/gc_counts.xlsx"))
+}
 
-## queries to check data in VGS .db
+## looking for species counts in VGS .db
+## Queries to check data in VGS .db
 ## list of all species added - do any of them need to be changed?
 
-## ## list of gc categories
+## list of gc categories
 gc_used <- paste0("SELECT DISTINCT PK_Species, SpeciesName, CommonName  from Protocol
   INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
   INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
   INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
   INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
   where List = 'GC'")
-
+## report generated and opened if data
 ground_covers_used_by_events <- dbGetQuery(mydb, gc_used)
+
 write.xlsx(ground_covers_used_by_events, paste0(app_path, "/www/Conflicts/ground_cover_cat_used.xlsx"))
+if (nrow(ground_covers_used_by_events)>1) {
+  file.show(paste0(app_path, "/www/Conflicts/ground_cover_cat_used.xlsx"))
+}
 
 ## Check all species added
 sp_count <- paste0("SELECT DISTINCT PK_Species, SpeciesName, CommonName, SpeciesQualifier, Count(PK_Species)  from Protocol
@@ -54,7 +63,9 @@ species_count <- species_count %>%
   arrange(SpeciesName)
 
 write.xlsx(species_count, paste0(app_path, "/www/Conflicts/species_count.xlsx"))
-file.show(paste0(app_path, "/www/Conflicts/species_count.xlsx"))
+if (nrow(species_count)>1) {
+  file.show(paste0(app_path, "/www/Conflicts/species_count.xlsx"))
+}
 
 ## generating codes that need to be updated
 ## Create "www/SpeciesReplace.xlsx" file with error species
@@ -94,11 +105,11 @@ write.xlsx(sp_update_file, paste0(app_path, "/www/SpeciesReplace.xlsx"))
 }
 
 ## GC missing or too much
-gc_miss <- qaqc[grep("missing or too", qaqc[[1]]), ]
+gc_miss <- qaqc[grep("Warning,", qaqc[[1]]), ]
 names(gc_miss)[1] <- "Ground Cover Count Warnings"
 
+write.xlsx(gc_miss, paste0(app_path, "/www/Conflicts/gc_missing_or_too_much.xlsx"))
 if (nrow(gc_miss)>1) {
-  write.xlsx(gc_miss, paste0(app_path, "/www/Conflicts/gc_missing_or_too_much.xlsx"))
   file.show(paste0(app_path,"/www/Conflicts/gc_missing_or_too_much.xlsx"))
 }
 
@@ -106,8 +117,18 @@ if (nrow(gc_miss)>1) {
 gc_perc_errors <- qaqc[grep("GC % sums", qaqc[[1]]), ]
 names(gc_miss)[1] <- "Ground Cover % Warnings"
 
+write.xlsx(gc_perc_errors, paste0(app_path, "/www/Conflicts/gc_perc_errors.xlsx"))
 if (nrow(gc_miss)>0) {
-  write.xlsx(gc_perc_errors, paste0(app_path, "/www/Conflicts/gc_perc_errors.xlsx"))
   file.show(paste0(app_path,"/www/Conflicts/gc_perc_errors.xlsx"))
 }
+
+## Script to pull siteclass names for folders to look for spelling errors to fix
+# siteClass <- paste0("SELECT ClassName from SiteClass")
+# 
+# siteClassNames <- dbGetQuery(mydb, siteClass)
+# 
+# nameCheck_RD <- siteClassNames %>%
+#   filter(str_detect(ClassName, fixed("Ranger")))
+# 
+# rd_check<- unique(nameCheck_RD)
 
