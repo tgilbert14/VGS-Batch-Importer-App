@@ -1361,52 +1361,55 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
       d <- d + 1
     }
     
-    ## after all species inserted - go back and check for sys_none
-    s <- 1
-    while (s < ncol(sample_data) + 1) {
-      ## check if data
-      is_there_data <- !is.na(sample_data[s])
-      ## if at least one true -> don't add anything
-      sys_none_check <- grep("TRUE", is_there_data)
-      ## if = 0 -> add SYS_NONE to sample# s
-      if (length(sys_none_check) == 0) {
-        PK_Sample <- GUID()
-        
-        insert_sample <- paste0("INSERT INTO Sample
-           (PK_Sample
-           ,FK_Event
-           ,FK_Species
-           ,Transect
-           ,SampleNumber
-           ,Element
-           ,SubElement
-           ,FieldSymbol
-           ,SpeciesQualifier
-           ,FieldQualifier
-           ,cParameter
-           ,cParameter2
-           ,cParameter3
-           ,nValue
-           ,nValue2
-           ,nValue3
-           ,cValue
-           ,cValue2
-           ,cValue3
-           ,SyncKey
-           ,SyncState)
-     VALUES
-           (", PK_Sample, ",", FK_Event, ",'SYS_NONE',", Transect, ",", s, ",1,", SubElement, ",'SYS_NONE',NULL,", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
-        
-        ## only insert if not in power mode
-        if (power_mode == "FALSE") {
-          ## insert NF data
-          dbExecute(mydb, insert_sample)
-        }
-        
-      }
-      
-      s <- s + 1
-    }
+    ## not inserting None's for now -> more common to have incomplete data than
+    ## none's, need to add to excel sheet a way to select 'None'
+    
+    # ## after all species inserted - go back and check for sys_none
+    # s <- 1
+    # while (s < ncol(sample_data) + 1) {
+    #   ## check if data
+    #   is_there_data <- !is.na(sample_data[s])
+    #   ## if at least one true -> don't add anything
+    #   sys_none_check <- grep("TRUE", is_there_data)
+    #   ## if = 0 -> add SYS_NONE to sample# s
+    #   if (length(sys_none_check) == 0) {
+    #     PK_Sample <- GUID()
+    #     
+    #     insert_sample <- paste0("INSERT INTO Sample
+    #        (PK_Sample
+    #        ,FK_Event
+    #        ,FK_Species
+    #        ,Transect
+    #        ,SampleNumber
+    #        ,Element
+    #        ,SubElement
+    #        ,FieldSymbol
+    #        ,SpeciesQualifier
+    #        ,FieldQualifier
+    #        ,cParameter
+    #        ,cParameter2
+    #        ,cParameter3
+    #        ,nValue
+    #        ,nValue2
+    #        ,nValue3
+    #        ,cValue
+    #        ,cValue2
+    #        ,cValue3
+    #        ,SyncKey
+    #        ,SyncState)
+    #  VALUES
+    #        (", PK_Sample, ",", FK_Event, ",'SYS_NONE',", Transect, ",", s, ",1,", SubElement, ",'SYS_NONE',NULL,", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
+    #     
+    #     ## only insert if not in power mode
+    #     if (power_mode == "FALSE") {
+    #       ## insert NF data
+    #       dbExecute(mydb, insert_sample)
+    #     }
+    #     
+    #   }
+    #   
+    #   s <- s + 1
+    # }
     
     print("Nested Freq inserted...")
   }
