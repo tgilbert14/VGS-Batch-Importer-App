@@ -1,6 +1,6 @@
 ## read in output log for qa/qc reports ->
 qaqc <- read_csv(paste0(app_path, "/www/r_output.txt"))
-View(qaqc)
+#View(qaqc)
 
 ## looking for species conflicts in log
 sp_conflicts <- unique(qaqc[grep("Species", qaqc[[1]], ignore.case = T), ])
@@ -136,3 +136,93 @@ className_check <- unique(siteClassNames)
 write.xlsx(className_check, paste0(app_path, "/www/SiteClassNameChecks/FolderNames.xlsx"))
 file.show(paste0(app_path,"/www/SiteClassNameChecks/FolderNames.xlsx"))
 
+
+## query transects in use for freq and count # of species per event
+## flag if not expected 80 per transect !!
+## -- to get transects being used for freq
+transect_q <- "SELECT siteID, Protocol.Date, count(DISTINCT transect) from Protocol
+INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
+INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
+INNER JOIN Site ON Site.PK_Site = Event.FK_Site
+INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
+where eventName LIKE '%Frequency%'
+group by siteID, Protocol.Date
+order by SiteID"
+## -- to get # of gc per site/date
+gc_points_q <- "SELECT DISTINCT SiteID, Protocol.Date, count(PK_Sample) from Protocol
+INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
+INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
+INNER JOIN Site ON Site.PK_Site = Event.FK_Site
+INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
+where eventName LIKE '%Point Ground Cover%'
+group by SiteID, Protocol.Date
+order by SiteID"
+
+## -- to get # of gc per site/date
+notes_q <- "SELECT DISTINCT SiteID, Protocol.Date, Site.Notes as 'S.notes', Protocol.Notes as 'P.notes' from Protocol
+INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
+INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
+INNER JOIN Site ON Site.PK_Site = Event.FK_Site
+INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
+group by SiteID, Protocol.Date
+order by SiteID"
+
+transect_by_site <- dbGetQuery(mydb, transect_q)
+gc_points_by_site <- dbGetQuery(mydb, gc_points_q)
+notes <- dbGetQuery(mydb, notes_q)
+
+data_summary <- full_join(transect_by_site, gc_points_by_site)
+
+data_sum_expected <- data_summary %>% 
+  mutate("Expected gc points" = `count(DISTINCT transect)`*80)
+#View(data_sum_expected)
+
+data_sum_expected <- left_join(data_sum_expected, notes)
+
+## possible data entry errors to check in data
+see_me_unexpected <- data_sum_expected %>% 
+  filter(data_sum_expected$`count(PK_Sample)` != data_sum_expected$`Expected gc points`)
+
+see_me_is.na <- data_sum_expected %>% 
+  filter(is.na(data_sum_expected$`count(PK_Sample)`)) %>% 
+  arrange(SiteID)
+
+see_me_is.na$`count(PK_Sample)`[is.na(see_me_is.na$`count(PK_Sample)`)] <- 0
+
+see_me_gc_errors <- rbind(see_me_unexpected, see_me_is.na)
+
+write.xlsx(see_me_gc_errors, paste0(app_path, "/www/Conflicts/possible_data_errors_gc.xlsx"))
+if (nrow(see_me_gc_errors)>0) {
+  file.show(paste0(app_path,"/www/Conflicts/possible_data_errors_gc.xlsx"))
+}
+
+## checking for messed up dates
+date_check <- data_summary %>% 
+  filter(str_detect(Date, fixed("NA")))
+
+write.xlsx(date_check, paste0(app_path, "/www/Conflicts/possible_date_errors.xlsx"))
+if (nrow(date_check)>0) {
+  file.show(paste0(app_path,"/www/Conflicts/possible_date_errors.xlsx"))
+}
+
+## looking for duplicates for species code in data - possible comparison report conflicts to fix
+sp_qc_data <- read.xlsx(paste0(app_path,"/www/Conflicts/species_count_by_site.xlsx"))
+
+possible_duplicated_species <- sp_qc_data %>% 
+  group_by(SiteID, Date) %>%
+  filter(duplicated(PK_Species))
+
+possible_duplicated_species <- possible_duplicated_species %>% 
+  select(!`Count(PK_Species)`)
+
+message_for_sheet <- data.frame(SiteID = "Go through data sheet and update species/qualifiers...",
+                                Date = "----->",PK_Species = "Codes seen multiple times for this SiteID/Date combo...",Updated.Code = "----->",
+                                SpeciesName = "----->",CommonName = "",SpeciesQualifier = "----->")
+
+freq_comp_check <- rbind(message_for_sheet, possible_duplicated_species)
+
+## run comparison report and try to fix species for these
+write.xlsx(freq_comp_check, paste0(app_path, "/www/Conflicts/possible_duplicated_species.xlsx"))
+if (nrow(freq_comp_check)>0) {
+  file.show(paste0(app_path,"/www/Conflicts/possible_duplicated_species.xlsx"))
+}
