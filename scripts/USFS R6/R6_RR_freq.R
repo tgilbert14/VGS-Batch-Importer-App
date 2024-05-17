@@ -107,7 +107,8 @@ EventName = 'Frequency (by quadrat)'")
   
   ## freq data exists... and gc data is % hits instead of actual hits
   ## need to insert proportional gc data again for this transect (Belt 1 inserted already)
-  if (whole_num_check_confirm == "FALSE" && (length(whole_num_check_confirm)!= 0)) {
+  ## added the OR sum is equal to 80 because % entries will be converted to 80 gc hits
+  if ((whole_num_check_confirm == "FALSE" && length(whole_num_check_confirm)!= 0) || sum(as.numeric(temp_gc[,2]))==80) {
     if (belt_num != 1) {
       ## insert gc data for other belts when present with updated belt num
       belt_numbers<- rep(belt_num,80)
