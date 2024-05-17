@@ -26,12 +26,17 @@ gc_data <- gc_data %>%
 
 ## if no gc data
 if (nrow(gc_data) == 0) {
+  ## set var for later if no gc data - data frame needed for if statement checks
+  temp_gc <- data.frame(0, 0)
   print(paste0("No GC data for file ", batch_file))
+  
+  ## this does not work - direct user to enter no gc data in the notes
   ## update event notes to remark no gc data for this event
-  update_event_notes <- paste0("Update Protocol
-               Set Notes = 'No Ground Cover data for this event'
-               Where PK_Protocol=", checked_PK_Event_gc)
-  dbExecute(mydb, update_event_notes)
+  # update_event_notes <- paste0("Update Protocol
+  #              Set Notes = 'No Ground Cover data for this event'
+  #              Where PK_Protocol=", checked_PK_Event_gc)
+  # dbExecute(mydb, update_event_notes)
+  
 }
 
 ## only insert if data present
@@ -64,6 +69,7 @@ if (nrow(gc_data) > 0) {
     ## add decimals up - should be 100% - make col numeric
     col_as_num<- sapply(temp_gc[2], as.numeric)
     sum_per_gc<- colSums(col_as_num)
+    
     ## if not totaled to 100% give message
     if (sum_per_gc != 100) {
       print(paste0(
@@ -121,8 +127,10 @@ if (nrow(gc_data) > 0) {
   
   ## for data log
   print(paste0(length(hi2)," ground cover points found - ",site_name))
+  
   ## each belt should have 80 ground cover points
   tot_num_belts<- length(hi2)/80
+  
   ## checking if belt number is whole number
   is_whole_number<- tot_num_belts%%1==0
   
