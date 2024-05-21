@@ -82,6 +82,8 @@ ui <- fluidPage(
       ## pop up UI's here after Protocol entry - see server side
       shiny::actionButton(inputId = "create", label = "Batch Import Data", width = "100%"),
       br(),
+      checkboxInput("spec_mode", "Use Special Insert?", value = F),
+      br(),
  
       ## if test mode
       if (test_mode == TRUE) {
@@ -226,6 +228,9 @@ server <- function(input, output, session) {
     source(paste0(app_path, "/Functions/historical_data_importer.R"), local = T)
     read_import_data(Protocol = input$Protocol, ServerKey = input$ServerKey, Protocol_2 = input$Protocol_2)
     
+    ## updating attribute table/form settings when needed
+    source(paste0(app_path, "/Functions/attribute_update.R"), local = T)
+    
     ## pop up for species errors in VGS
     source(paste0(app_path, "/Functions/species_qaqc_check.R"), local = T)
     
@@ -306,77 +311,143 @@ server <- function(input, output, session) {
     plant_files<- list.files("www/sp_lists_USDA/")
     state_names<- substr(plant_files, 0 , nchar(plant_files)-4)
     
-    shinyalert("Select a state",
-               imageUrl = "images/cowboy2.png", size = "m", imageWidth = 500,
-               imageHeight = 300, html = TRUE,
-               text = tagList(selectInput(inputId = "st_pick",
-                                          label = "This will compare species by state (USDA)",
-                                          choices = c("",unlist(state_names)), selected = F, multiple = F)),
-               confirmButtonText = "ok", confirmButtonCol = "#70FF19")
+    # shinyalert("Select a state",
+    #            imageUrl = "images/cowboy2.png", size = "m", imageWidth = 500,
+    #            imageHeight = 300, html = TRUE,
+    #            text = tagList(selectInput(inputId = "st_pick",
+    #                                       label = "This will compare species by state (USDA)",
+    #                                       choices = c("",unlist(state_names)), selected = F, multiple = T)),
+    #            confirmButtonText = "ok", confirmButtonCol = "#70FF19")
     
-    output$status <- renderText({
-      req(nchar(input$st_pick)>0)
-      
-      ## get species list from database
-      vgs_species_list_q <- paste0("SELECT PK_Species,SpeciesName, CommonName from Species where List = 'NRCS'")
-      vgs_species_list <- dbGetQuery(mydb, vgs_species_list_q)
-      
-      ## state selection and file read
-      selected_state<- input$st_pick
-      selected_state_file_path<- paste0(app_path,"/www/sp_lists_USDA/",selected_state,".csv")
-      
-      st_plant_data<- read_csv(selected_state_file_path)
-      
-      sp_codes_avaliable_by_state<- as.data.frame(unique(st_plant_data$symbol))
-      
-      ## Check all species added
-      sp_query <- paste0("SELECT DISTINCT PK_Species, SpeciesName from Protocol
+    # Show a modal when the button is clicked
+    showModal(modalDialog(
+      title = "Select a state",
+      selectInput(inputId = "st_pick",
+                  label = "This will compare species by state (USDA)",
+                  choices = c("", state_names), 
+                  selected = F, 
+                  multiple = T),
+      footer = tagList(
+        modalButton("Close"),
+        actionButton("button", "Generate Report")
+      )
+    ))
+    
+    observeEvent(input$button, {
+      output$status <- renderText({
+        req(nchar(input$st_pick)>0)
+        
+        ## get species list from database
+        vgs_species_list_q <- paste0("SELECT PK_Species,SpeciesName, CommonName from Species where List = 'NRCS'")
+        vgs_species_list <- dbGetQuery(mydb, vgs_species_list_q)
+        
+        ## state selection and file read - only 1 selection
+        if (length(selected_state) == 1) {
+          selected_state<- input$st_pick
+          selected_state_file_path<- paste0(app_path,"/www/sp_lists_USDA/",selected_state,".csv")
+          
+          st_plant_data<- read_csv(selected_state_file_path)
+          ## get species code name
+          sp_codes_avaliable_by_state<- as.data.frame(unique(st_plant_data$symbol))
+          names(sp_codes_avaliable_by_state) <- "code"
+          ## get species code synomns to help catch old codes
+          more_sp_codes_avaliable_by_state<- as.data.frame(unique(st_plant_data$synonym_symbol))
+          names(more_sp_codes_avaliable_by_state) <- "code"
+          
+          final_sp_list <- unique(rbind(sp_codes_avaliable_by_state, more_sp_codes_avaliable_by_state)) %>%
+            arrange(code)
+          
+          ## merge w/ vgs list
+          
+          
+          
+          
+        } else { ## if more than 1 state selected
+          state_num <- 1
+          ## temp df to bind to later
+          final_sp_list <- data.frame("code" = "")
+          while (state_num < length(selected_state)+1) {
+            ## goes through each state
+            selected_state<- input$st_pick[state_num]
+            selected_state_file_path<- paste0(app_path,"/www/sp_lists_USDA/",selected_state,".csv")
+            
+            st_plant_data<- read_csv(selected_state_file_path)
+            ## get species code name
+            sp_codes_avaliable_by_state<- as.data.frame(unique(st_plant_data$symbol))
+            names(sp_codes_avaliable_by_state) <- "code"
+            ## get species code synomns to help catch old codes
+            more_sp_codes_avaliable_by_state<- as.data.frame(unique(st_plant_data$synonym_symbol))
+            names(more_sp_codes_avaliable_by_state) <- "code"
+            
+            final_sp_list_temp <- unique(rbind(sp_codes_avaliable_by_state, more_sp_codes_avaliable_by_state)) %>%
+              arrange(code)
+            
+            final_sp_list <- rbind(final_sp_list, final_sp_list_temp)
+            
+            state_num = state_num+1
+          }
+          
+          final_sp_list <- unique(final_sp_list) %>% 
+            arrange(code)
+          
+          ## merge w/ vgs list
+          
+          
+          
+          
+        }
+        
+        
+        ## Check all species added
+        sp_query <- paste0("SELECT DISTINCT PK_Species, SpeciesName from Protocol
   INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
   INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
   INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
   INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
   where List = 'NRCS'")
+        
+        species_in_db <- dbGetQuery(mydb, sp_query)
+        
+        sp_in_data <- as.data.frame(unique(species_in_db$PK_Species))
+        
+        not_in_state <- setdiff(species_in_db$PK_Species,final_sp_list$code)
+        
+        ## get rid of allowed VGS 2 codes
+        updated_not_in<- not_in_state[grep("^2", not_in_state, invert = T)]
+        
+        updated_not_in<- as.data.frame(updated_not_in)
+        names(updated_not_in)[1]<- "PK_Species"
+        
+        updated_not_in_2<- left_join(updated_not_in, vgs_species_list)
+        
+        ## if species name is one name -> genus only (Aster)
+        ## then check if there are species that start with it 'Aster sp...'
+        
+        # ## joining to VGS names for codes to see if species match (ASTER)
+        # names(sp_codes_avaliable_by_state)[1]<- "PK_Species"
+        # spe<- left_join(sp_codes_avaliable_by_state, vgs_species_list)
+        # View(spe)
+        # ## compare species names
+        # setdiff(updated_not_in_2$SpeciesName, spe$SpeciesName)
+        # spe$SpeciesName
+        
+        
+        
+        ## check genus in db vs if genus is in state
+        
+        ## ----
+        
+        
+        names(updated_not_in_2)[1]<- paste0("Species not in USDA plant list for selected States")
+        write.xlsx(updated_not_in_2, paste0(app_path, "/www/Conflicts/not_in_state.xlsx"))
+        file.show(paste0(app_path, "/www/Conflicts/not_in_state.xlsx"))
+        
+        print(paste0(selected_state," Selected and checked"))
+      })
       
-      species_in_db <- dbGetQuery(mydb, sp_query)
-      
-      sp_in_data<- as.data.frame(unique(species_in_db$PK_Species))
-      
-      not_in_state<- setdiff(species_in_db$PK_Species,sp_codes_avaliable_by_state$`unique(st_plant_data$symbol)`)
-      
-      ## get rid of allowed VGS 2 codes
-      updated_not_in<- not_in_state[grep("^2", not_in_state, invert = T)]
-      
-      updated_not_in<- as.data.frame(updated_not_in)
-      names(updated_not_in)[1]<- "PK_Species"
-      
-      updated_not_in_2<- left_join(updated_not_in, vgs_species_list)
-      
-      ## if species name is one name -> genus only (Aster)
-      ## then check if there are species that start with it 'Aster sp...'
-      
-      # ## joining to VGS names for codes to see if species match (ASTER)
-      # names(sp_codes_avaliable_by_state)[1]<- "PK_Species"
-      # spe<- left_join(sp_codes_avaliable_by_state, vgs_species_list)
-      # View(spe)
-      # ## compare species names
-      # setdiff(updated_not_in_2$SpeciesName, spe$SpeciesName)
-      # spe$SpeciesName
-      
-      
-      
-      ## check genus in db vs if genus is in state
-      
-      ## ----
-      
-      
-      names(updated_not_in_2)[1]<- paste0("Species not in USDA plant list for ",selected_state)
-      write.xlsx(updated_not_in_2, paste0(app_path, "/www/Conflicts/not_in_state.xlsx"))
-      file.show(paste0(app_path, "/www/Conflicts/not_in_state.xlsx"))
-     
-      print(paste0(selected_state," Selected and checked"))
-    })
-  
-  })
+    }) ## end of state select observable event
+
+  }) ## end of click species check button
   
   ## clear variables on stop
   onStop(function() {
