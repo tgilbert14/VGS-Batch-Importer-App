@@ -341,9 +341,11 @@ server <- function(input, output, session) {
         vgs_species_list_q <- paste0("SELECT PK_Species,SpeciesName, CommonName from Species where List = 'NRCS'")
         vgs_species_list <- dbGetQuery(mydb, vgs_species_list_q)
         
+        selected_state<- input$st_pick
+        
         ## state selection and file read - only 1 selection
         if (length(selected_state) == 1) {
-          selected_state<- input$st_pick
+          
           selected_state_file_path<- paste0(app_path,"/www/sp_lists_USDA/",selected_state,".csv")
           
           st_plant_data<- read_csv(selected_state_file_path)
@@ -359,8 +361,7 @@ server <- function(input, output, session) {
           
           ## merge w/ vgs list
           
-          
-          
+
           
         } else { ## if more than 1 state selected
           state_num <- 1
