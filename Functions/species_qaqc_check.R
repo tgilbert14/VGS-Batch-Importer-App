@@ -60,12 +60,25 @@ sp_count <- paste0("SELECT DISTINCT PK_Species, Species.NewSynonym as 'Updated C
 
 species_count <- dbGetQuery(mydb, sp_count)
 
+sp_in_num_of_sites <- paste0("SELECT DISTINCT PK_Species, Species.NewSynonym as 'Updated Code', SpeciesName, CommonName, SpeciesQualifier, Count(DISTINCT PK_Site) as '#DistinctSites' from Protocol
+  INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
+  INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
+  INNER JOIN Site ON Site.PK_Site = Event.FK_Site
+  INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
+  INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
+  where List = 'NRCS' and eventName LIKE '%Frequency%'
+  group by PK_Species, SpeciesName, CommonName, SpeciesQualifier")
+
+species_seen_at_each_site <- dbGetQuery(mydb, sp_in_num_of_sites)
+
+species_count_w_siteInfo <- full_join(species_count, species_seen_at_each_site)
+
 # species_count <- species_count %>%
 #   arrange(SpeciesName)
 
-write.xlsx(species_count, paste0(app_path, "/www/Conflicts/species_count.xlsx"))
-# if (nrow(species_count)>1) {
-#   file.show(paste0(app_path, "/www/Conflicts/species_count.xlsx"))
+write.xlsx(species_count_w_siteInfo, paste0(app_path, "/www/Conflicts/species_count_w_siteInfo.xlsx"))
+# if (nrow(species_count_w_siteInfo)>1) {
+#   file.show(paste0(app_path, "/www/Conflicts/species_count_w_siteInfo.xlsx"))
 # }
 
 ## Check all species added BY SITE
@@ -79,8 +92,6 @@ sp_count_site <- paste0("SELECT DISTINCT SiteID, Protocol.Date, PK_Species, Spec
   group by SiteID, Protocol.Date, PK_Species, SpeciesName, CommonName, SpeciesQualifier")
 
 species_count_by_site <- dbGetQuery(mydb, sp_count_site)
-# species_count <- species_count %>%
-#   arrange(SpeciesName)
 
 write.xlsx(species_count_by_site, paste0(app_path, "/www/Conflicts/species_count_by_site.xlsx"))
 
@@ -244,14 +255,102 @@ write.xlsx(freq_comp_check, paste0(app_path, "/www/Conflicts/possible_duplicated
 #   file.show(paste0(app_path,"/www/Conflicts/possible_duplicated_species.xlsx"))
 # }
 
+## special for RR
+if (ServerKey == "USFS R6-RR") {
+  ## set USDA states to compare ->
+  selected_state <- c("California","Oregon","Washington","Idaho","Nevada")
+  state_num <- 1
+  ## temp df to bind to later
+  final_sp_list <- data.frame("code" = "")
+  while (state_num < length(selected_state)+1) {
+    ## goes through each state
+    selected_state_s<- selected_state[state_num]
+    selected_state_file_path<- paste0(app_path,"/www/sp_lists_USDA/",selected_state_s,".csv")
+    
+    st_plant_data<- read_csv(selected_state_file_path)
+    ## get species code name
+    sp_codes_avaliable_by_state<- as.data.frame(unique(st_plant_data$symbol))
+    names(sp_codes_avaliable_by_state) <- "code"
+    ## get species code synomns to help catch old codes
+    more_sp_codes_avaliable_by_state<- as.data.frame(unique(st_plant_data$synonym_symbol))
+    names(more_sp_codes_avaliable_by_state) <- "code"
+    
+    final_sp_list_temp <- unique(rbind(sp_codes_avaliable_by_state, more_sp_codes_avaliable_by_state)) %>%
+      arrange(code)
+    
+    final_sp_list <- rbind(final_sp_list, final_sp_list_temp)
+    
+    state_num = state_num+1
+  }
+  
+  ## plant list of all codes in selected states from USDA website
+  final_sp_list_temp <- unique(final_sp_list)
+  
+  ## merge vgs old codes to state list as well ->
+  names(vgs_species_list_least)[1] <- "code"
+  vgs_temp_w_state_codes <- unique(left_join(final_sp_list, vgs_species_list_least))
+  
+  vgs_temp_old_codes_only <- as.data.frame(vgs_temp_w_state_codes$NewSynonym)
+  names(vgs_temp_old_codes_only)[1] <- "code"
+  
+  final_sp_list <- unique(rbind(final_sp_list, vgs_temp_old_codes_only)) %>% 
+    filter(!is.na(code)) %>% 
+    arrange(code)
+  
+  ## Check all species added
+  sp_query <- paste0("SELECT DISTINCT PK_Species, SpeciesName from Protocol
+  INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
+  INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
+  INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
+  INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
+  where List = 'NRCS'")
+  
+  species_in_db <- dbGetQuery(mydb, sp_query)
+  
+  sp_in_data <- as.data.frame(unique(species_in_db$PK_Species))
+  
+  not_in_state <- setdiff(species_in_db$PK_Species,final_sp_list$code)
+  
+  ## get rid of allowed VGS 2 codes
+  updated_not_in <- not_in_state[grep("^2", not_in_state, invert = T)]
+  
+  updated_not_in <- as.data.frame(updated_not_in)
+  names(updated_not_in)[1]<- "PK_Species"
+  
+  ## plants in .db that do not show up in selected state USDA lists
+  updated_not_in_2<- left_join(updated_not_in, vgs_species_list)
+
+  ## add column so can merge and know its not in state lists
+  updated_not_in_2[2] <- "Not in USDA list for CA, WA, OR, ID, or NV"
+  names(updated_not_in_2)[2] <- "Species in USDA plant list?"
+  
+  sp_by_state_check_all <- left_join(species_count_w_siteInfo, updated_not_in_2)
+  
+  sp_by_state_check_all$`Species in USDA plant list?`[is.na(sp_by_state_check_all$`Species in USDA plant list?`)] <- "yes"
+  
+  names(sp_by_state_check_all)[2] <- "UpdatedCode"
+  names(sp_by_state_check_all)[6] <- "SampleHits"
+  names(sp_by_state_check_all)[7] <- "SiteHits"
+  names(sp_by_state_check_all)[8] <- "InUSDA_PlantList?"
+  
+  write.xlsx(sp_by_state_check_all, paste0(app_path, "/www/Conflicts/sp_by_state_check_all.xlsx"))
+  file.show(paste0(app_path, "/www/Conflicts/sp_by_state_check_all.xlsx"))
+}
+
+
+
+## FINAL WB ----
 wb <- createWorkbook()
 # Add a worksheet to the workbook
-addWorksheet(wb, "SpeciesCounts")
+addWorksheet(wb, "SpeciesCountEval")
 # Write your data frame (df) to the worksheet
-writeData(wb, "SpeciesCounts", species_count)
+writeData(wb, "SpeciesCountEval", sp_by_state_check_all)
 
 # highlightStyle <- createStyle(fgFill = "#FFFF00")  # Yellow fill
 # conditionalFormatting(wb, "SpeciesCounts", cols = 1:nrow(species_count), rows = 1:ncol(species_count), rule = "(H:H)>100", style = highlightStyle)
+
+addWorksheet(wb, "SpeciesLookupBySite")
+writeData(wb, "SpeciesLookupBySite", species_count_by_site)
 
 addWorksheet(wb, "FreqComparisons")
 writeData(wb, "FreqComparisons", freq_comp_check)
