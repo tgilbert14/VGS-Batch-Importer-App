@@ -2,7 +2,7 @@
 
 print(paste0("Parsing Data for Nested Freq..."))
 ## selecting only data with no column names (-1 to get rid of sum column)
-nf_data <- data_import[c(2:nrow(data_import)), c(1:ncol(data_import)-1)]
+nf_data <- data_import[c(3:nrow(data_import)), c(1:ncol(data_import)-1)]
 ## get rid of NA columns with no species listed
 nf_data <- nf_data %>%
   filter(!is.na(nf_data[1]))
