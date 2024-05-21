@@ -16,8 +16,13 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
   vgs_species_list <<- dbGetQuery(mydb, vgs_species_list_q)
   
   ## get full species list from database
-  vgs_species_list_q2 <- paste0("SELECT PK_Species,SpeciesName, CommonName from Species where List = 'NRCS'")
+  vgs_species_list_q2 <- paste0("SELECT PK_Species, SpeciesName, CommonName from Species where List = 'NRCS'")
   vgs_species_list_more <<- dbGetQuery(mydb, vgs_species_list_q2)
+  
+  ## get full species list from database
+  vgs_species_list_q3 <- paste0("SELECT PK_Species, NewSynonym from Species where List = 'NRCS'
+                                AND NewSynonym IS NOT NULL AND NewSynonym != ''")
+  vgs_species_list_least <<- dbGetQuery(mydb, vgs_species_list_q3)
   
   ## Save to parent environment for later
   ServerKey <<- ServerKey
@@ -136,9 +141,8 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
       ## move site to correct folder or create parent folders
       print("next excel tab...")
       
-      # if (x == 7) {
-      #   stop("test here...")
-      # }
+      ## reset data frame
+      rm(data_import)
       
     }
     
@@ -273,7 +277,11 @@ batch_import <<- function(historical_raw_data) {
     }
     
     print(paste0("Finished ", active_sheets[x]))
+    
   }
+  
+  ## reset this var
+  rm(historical_raw_data)
 }
 ## end of batch import data function -------------------------------------------
 
