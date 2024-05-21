@@ -37,4 +37,23 @@ $(document).ready(function() {
     });
   });
   
+    // Special data insert Button
+  $("#spec_mode").on("change", async function(event) {
+    // Check the state of the checkbox and change the title accordingly
+    var title = $("#spec_mode").is(":checked") ? "Special Insert - only use specific files with 'incomplete transects' in this mode" : "nevermind...";
+    
+    Swal.fire({
+      title: title,
+      focusConfirm: false,
+      confirmButtonText: `meow`,
+      background: "purple",
+      backdrop: `
+        rgb(115, 63, 213)
+        url("/images/nyan-cat.gif")
+        left top
+        no-repeat
+      `
+    });
+  });
+  
 });
