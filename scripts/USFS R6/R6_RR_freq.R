@@ -2,19 +2,20 @@
 
 print(paste0("Parsing Data for Nested Freq..."))
 ## selecting only data with no column names (-1 to get rid of sum column)
-nf_data <- data_import[c(3:nrow(data_import)), c(1:ncol(data_import)-1)]
+nf_data <- data_import[c(2:nrow(data_import)), c(1:ncol(data_import)-1)]
 ## get rid of NA columns with no species listed
 nf_data <- nf_data %>%
   filter(!is.na(nf_data[1]))
 
-
+#View(nf_data)
 trim_sheet_name <- trimws(active_sheets[x])
 
 ## this has issue when 'a' at the end of number...
 belt_num <- as.numeric(substr(trim_sheet_name, nchar(trim_sheet_name), nchar(trim_sheet_name)))
+
 ## if there are 'a' belts, need to account for belt # on insert
-if (exists("add_to_belt") && !is.na(add_to_belt)) {
-  belt_num<- as.numeric(belt_num+1)
+if (exists("add_to_belt") && !is.na(add_to_belt) && !is.na(belt_num)) {
+  belt_num<- as.numeric(belt_num + add_to_belt)
   print(paste0(trim_sheet_name," updated to Belt #",belt_num," for NF insert"))
 }
 
@@ -24,15 +25,19 @@ if (class(belt_num) != "numeric" || is.na(belt_num)) {
   belt_num<- as.numeric(x-1)
   print(paste0(trim_sheet_name," updated to Belt #",belt_num," for NF insert"))
   ## add var to environment to track belt num movement
-  add_to_belt<- belt_num
+  if (exists("add_to_belt") && !is.na(add_to_belt)) {
+    add_to_belt = add_to_belt + 1
+  } else {
+    add_to_belt = 1
+  }
 }
 
-
+## this is just looking for species codes present, not #'s
 if (nrow(nf_data) == 0) {
   print(paste0("No Nested Freq for this Belt ", belt_num))
 }
 
-## only insert if data present
+## 1st check -> only insert if data present
 if (nrow(nf_data) > 0) {
   ## save as data frame
   nf_data <- as.data.frame(nf_data)
@@ -79,42 +84,49 @@ if (nrow(nf_data) > 0) {
   ## all columns except summary
   nest_freq_ready <- nf_data[,c(1:ncol(nf_data))]
   
-  ## searching for specific term for specific protocol
-  term <- "Standard"
-  
-  ## Set FK_Event - Query .db for correct PK_Event
-  ## complex for no reason - ehhhhhh
-  find_event_guid <- paste0("Select DISTINCT quote(PK_Event), ProtocolName from Protocol
+  ## 2nd check -> this is checking there is also #'s associated w/ sp codes
+  if (nrow(nest_freq_ready) > 0) {
+    
+    ## searching for specific term for specific protocol
+    term <- "Standard"
+    
+    ## Set FK_Event - Query .db for correct PK_Event
+    ## complex for no reason - ehhhhhh
+    find_event_guid <- paste0("Select DISTINCT quote(PK_Event), ProtocolName from Protocol
 INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
 INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
 INNER JOIN Site ON Site.PK_Site = Event.FK_Site
 where ProtocolName LIKE '%",term,"%' AND Protocol.Date = '",event_date, "'
 AND SiteID = '", site_name, "'", " AND
 EventName = 'Frequency (by quadrat)'")
-  
-  Event_guid_info <- DBI::dbGetQuery(mydb, find_event_guid)
-  checked_PK_Event_nf <- Event_guid_info$`quote(PK_Event)`[1]
-  
-  ## insert nested freq data
-  insert_data(data = nest_freq_ready, method = "NF", FK_Event = checked_PK_Event_nf, Transect = belt_num, SyncKey = 33, SyncState = 1)
-  
-  ## need this if first file uploaded has no gc var to initiate - usually
-  ## done in R6_RR_gc if gc present
-  if (!exists("whole_num_check_confirm")) {
-    ## so does not try to insert gc when none exists for 1st file
-    whole_num_check_confirm<- TRUE
-  }
-  
-  ## freq data exists... and gc data is % hits instead of actual hits
-  ## need to insert proportional gc data again for this transect (Belt 1 inserted already)
-  ## added the OR sum is equal to 80 because % entries will be converted to 80 gc hits
-  if ((whole_num_check_confirm == "FALSE" && length(whole_num_check_confirm)!= 0) || sum(as.numeric(temp_gc[,2]))==80) {
-    if (belt_num != 1) {
-      ## insert gc data for other belts when present with updated belt num
-      belt_numbers<- rep(belt_num,80)
-      insert_data(data = hi2, method = "GC", Transect = belt_numbers, 
-                  SampleNumber = SampleNumber_raw, Element = Element_raw, 
-                  FK_Event = checked_PK_Event_gc, SyncKey = 33, SyncState = 1)
+    
+    Event_guid_info <- DBI::dbGetQuery(mydb, find_event_guid)
+    checked_PK_Event_nf <- Event_guid_info$`quote(PK_Event)`[1]
+    
+    ## insert nested freq data
+    insert_data(data = nest_freq_ready, method = "NF", FK_Event = checked_PK_Event_nf, Transect = belt_num, SyncKey = 33, SyncState = 1)
+    
+    ## need this if first file uploaded has no gc var to initiate - usually
+    ## done in R6_RR_gc if gc present
+    if (!exists("whole_num_check_confirm")) {
+      ## so does not try to insert gc when none exists for 1st file
+      whole_num_check_confirm<- TRUE
+    }
+    
+    ## freq data exists... and gc data is % hits instead of actual hits
+    ## need to insert proportional gc data again for this transect (Belt 1 inserted already)
+    ## added the OR sum is equal to 80 because % entries will be converted to 80 gc hits
+    if ((whole_num_check_confirm == "FALSE" && length(whole_num_check_confirm)!= 0) || sum(as.numeric(temp_gc[,2]))==80) {
+      if (belt_num != 1) {
+        ## insert gc data for other belts when present with updated belt num
+        belt_numbers<- rep(belt_num,80)
+        insert_data(data = hi2, method = "GC", Transect = belt_numbers, 
+                    SampleNumber = SampleNumber_raw, Element = Element_raw, 
+                    FK_Event = checked_PK_Event_gc, SyncKey = 33, SyncState = 1)
       }
     }
   }
+  
+  }
+  
+  
