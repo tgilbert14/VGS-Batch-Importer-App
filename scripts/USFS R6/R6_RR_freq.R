@@ -1,8 +1,22 @@
 ## Processing Nested Freq Data (GC on cover page for R6 RR batch)
 
 print(paste0("Parsing Data for Nested Freq..."))
-## selecting only data with no column names (-1 to get rid of sum column)
-nf_data <- data_import[c(3:nrow(data_import)), c(1:ncol(data_import)-1)]
+
+## this means is missing initial row w/ info
+if (data_import$...1[1] == "Code") {
+  print("Excel sheet missing top row...")
+  nf_data <- data_import[c(2:nrow(data_import)), c(1:ncol(data_import)-1)]
+} else {
+  ## selecting only data with no column names (-1 to get rid of sum column)
+  nf_data <- data_import[c(3:nrow(data_import)), c(1:ncol(data_import)-1)]
+}
+
+## if the first row is not either of these - error in excel sheet
+if (data_import$...1[1] != "Code" && data_import$...1[1] != "Enter Species Code") {
+  print("This sheet needs to be fixed - top rows not as expected")
+  stop("This sheet needs to be fixed - top rows not as expected")
+}
+
 ## get rid of NA columns with no species listed
 nf_data <- nf_data %>%
   filter(!is.na(nf_data[1]))
@@ -89,6 +103,10 @@ if (nrow(nf_data) > 0) {
     
     ## searching for specific term for specific protocol
     term <- "Standard"
+    
+    # if (site_name == "Miller Glade #1 (2010-09)" && belt_num == 5) {
+    #   stop("stop")
+    # }
     
     ## Set FK_Event - Query .db for correct PK_Event
     ## complex for no reason - ehhhhhh
