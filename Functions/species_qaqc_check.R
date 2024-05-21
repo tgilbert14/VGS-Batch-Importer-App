@@ -16,18 +16,18 @@ sp_errors <- sp_conflicts %>%
   arrange(sp_conflicts)
 
 write.xlsx(sp_errors, paste0(app_path, "/www/Conflicts/sp_errors.xlsx"))
-if (nrow(sp_errors)>1) {
-  file.show(paste0(app_path, "/www/Conflicts/sp_errors.xlsx"))
-}
+# if (nrow(sp_errors)>1) {
+#   file.show(paste0(app_path, "/www/Conflicts/sp_errors.xlsx"))
+# }
 
 ## looking for ground cover counts in log
 gc_sum <- qaqc[grep("ground cover points", qaqc[[1]]), ]
 names(gc_sum)[1] <- "Ground Cover Counts"
 ## report generated and opened if data
 write.xlsx(gc_sum, paste0(app_path, "/www/Conflicts/gc_counts.xlsx"))
-if (nrow(gc_sum)>1) {
-  file.show(paste0(app_path, "/www/Conflicts/gc_counts.xlsx"))
-}
+# if (nrow(gc_sum)>1) {
+#   file.show(paste0(app_path, "/www/Conflicts/gc_counts.xlsx"))
+# }
 
 ## looking for species counts in VGS .db
 ## Queries to check data in VGS .db
@@ -44,29 +44,29 @@ gc_used <- paste0("SELECT DISTINCT PK_Species, SpeciesName, CommonName  from Pro
 ground_covers_used_by_events <- dbGetQuery(mydb, gc_used)
 
 write.xlsx(ground_covers_used_by_events, paste0(app_path, "/www/Conflicts/ground_cover_cat_used.xlsx"))
-if (nrow(ground_covers_used_by_events)>1) {
-  file.show(paste0(app_path, "/www/Conflicts/ground_cover_cat_used.xlsx"))
-}
+# if (nrow(ground_covers_used_by_events)>1) {
+#   file.show(paste0(app_path, "/www/Conflicts/ground_cover_cat_used.xlsx"))
+# }
 
 ## Check all species added
-sp_count <- paste0("SELECT DISTINCT SiteID, Protocol.Date, PK_Species, Species.NewSynonym as 'Updated Code', SpeciesName, CommonName, SpeciesQualifier, Count(PK_Species)  from Protocol
+sp_count <- paste0("SELECT DISTINCT PK_Species, Species.NewSynonym as 'Updated Code', SpeciesName, CommonName, SpeciesQualifier, Count(PK_Species)  from Protocol
   INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
   INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
   INNER JOIN Site ON Site.PK_Site = Event.FK_Site
   INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
   INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
   where List = 'NRCS' and eventName LIKE '%Frequency%'
-  group by SiteID, Protocol.Date, PK_Species, SpeciesName, CommonName, SpeciesQualifier")
+  group by PK_Species, SpeciesName, CommonName, SpeciesQualifier")
 
 species_count <- dbGetQuery(mydb, sp_count)
 
 # species_count <- species_count %>%
 #   arrange(SpeciesName)
 
-write.xlsx(species_count, paste0(app_path, "/www/Conflicts/species_count_by_site.xlsx"))
-if (nrow(species_count)>1) {
-  file.show(paste0(app_path, "/www/Conflicts/species_count_by_site.xlsx"))
-}
+write.xlsx(species_count, paste0(app_path, "/www/Conflicts/species_count.xlsx"))
+# if (nrow(species_count)>1) {
+#   file.show(paste0(app_path, "/www/Conflicts/species_count.xlsx"))
+# }
 
 ## generating codes that need to be updated
 ## Create "www/SpeciesReplace.xlsx" file with error species
@@ -110,18 +110,18 @@ gc_miss <- qaqc[grep("Warning,", qaqc[[1]]), ]
 names(gc_miss)[1] <- "Ground Cover Count Warnings"
 
 write.xlsx(gc_miss, paste0(app_path, "/www/Conflicts/gc_missing_or_too_much.xlsx"))
-if (nrow(gc_miss)>1) {
-  file.show(paste0(app_path,"/www/Conflicts/gc_missing_or_too_much.xlsx"))
-}
+# if (nrow(gc_miss)>1) {
+#   file.show(paste0(app_path,"/www/Conflicts/gc_missing_or_too_much.xlsx"))
+# }
 
 ## GC % errors
 gc_perc_errors <- qaqc[grep("GC % sums", qaqc[[1]]), ]
-names(gc_miss)[1] <- "Ground Cover % Warnings"
+names(gc_perc_errors)[1] <- "Ground Cover % Warnings"
 
 write.xlsx(gc_perc_errors, paste0(app_path, "/www/Conflicts/gc_perc_errors.xlsx"))
-if (nrow(gc_miss)>0) {
-  file.show(paste0(app_path,"/www/Conflicts/gc_perc_errors.xlsx"))
-}
+# if (nrow(gc_perc_errors)>0) {
+#   file.show(paste0(app_path,"/www/Conflicts/gc_perc_errors.xlsx"))
+# }
 
 ## Script to pull siteclass names for folders to look for spelling errors to fix
 siteClass <- paste0("SELECT ClassName from SiteClass
@@ -192,21 +192,21 @@ see_me_is.na$`count(PK_Sample)`[is.na(see_me_is.na$`count(PK_Sample)`)] <- 0
 see_me_gc_errors <- rbind(see_me_unexpected, see_me_is.na)
 
 write.xlsx(see_me_gc_errors, paste0(app_path, "/www/Conflicts/possible_data_errors_gc.xlsx"))
-if (nrow(see_me_gc_errors)>0) {
-  file.show(paste0(app_path,"/www/Conflicts/possible_data_errors_gc.xlsx"))
-}
+# if (nrow(see_me_gc_errors)>0) {
+#   file.show(paste0(app_path,"/www/Conflicts/possible_data_errors_gc.xlsx"))
+# }
 
 ## checking for messed up dates
 date_check <- data_summary %>% 
   filter(str_detect(Date, fixed("NA")))
 
 write.xlsx(date_check, paste0(app_path, "/www/Conflicts/possible_date_errors.xlsx"))
-if (nrow(date_check)>0) {
-  file.show(paste0(app_path,"/www/Conflicts/possible_date_errors.xlsx"))
-}
+# if (nrow(date_check)>0) {
+#   file.show(paste0(app_path,"/www/Conflicts/possible_date_errors.xlsx"))
+# }
 
 ## looking for duplicates for species code in data - possible comparison report conflicts to fix
-sp_qc_data <- read.xlsx(paste0(app_path,"/www/Conflicts/species_count_by_site.xlsx"))
+sp_qc_data <- read.xlsx(paste0(app_path,"/www/Conflicts/species_count.xlsx"))
 
 possible_duplicated_species <- sp_qc_data %>% 
   group_by(SiteID, Date) %>%
@@ -223,6 +223,48 @@ freq_comp_check <- rbind(message_for_sheet, possible_duplicated_species)
 
 ## run comparison report and try to fix species for these
 write.xlsx(freq_comp_check, paste0(app_path, "/www/Conflicts/possible_duplicated_species.xlsx"))
-if (nrow(freq_comp_check)>0) {
-  file.show(paste0(app_path,"/www/Conflicts/possible_duplicated_species.xlsx"))
-}
+# if (nrow(freq_comp_check)>0) {
+#   file.show(paste0(app_path,"/www/Conflicts/possible_duplicated_species.xlsx"))
+# }
+
+wb <- createWorkbook()
+# Add a worksheet to the workbook
+addWorksheet(wb, "SpeciesCounts")
+# Write your data frame (df) to the worksheet
+writeData(wb, "SpeciesCounts", species_count)
+
+# highlightStyle <- createStyle(fgFill = "#FFFF00")  # Yellow fill
+# conditionalFormatting(wb, "SpeciesCounts", cols = 1:nrow(species_count), rows = 1:ncol(species_count), rule = "(H:H)>100", style = highlightStyle)
+
+addWorksheet(wb, "FreqComparisons")
+writeData(wb, "FreqComparisons", freq_comp_check)
+
+addWorksheet(wb, "PossibleGC_errors")
+writeData(wb, "PossibleGC_errors", see_me_gc_errors)
+
+addWorksheet(wb, "SiteDateErrors")
+writeData(wb, "SiteDateErrors", date_check)
+
+addWorksheet(wb, "GC_percent_errors")
+writeData(wb, "GC_percent_errors", gc_perc_errors)
+
+addWorksheet(wb, "GCwarnings")
+writeData(wb, "GCwarnings", gc_miss)
+
+addWorksheet(wb, "GCsums")
+writeData(wb, "GCsums", gc_sum)
+
+addWorksheet(wb, "GCused")
+writeData(wb, "GCused", ground_covers_used_by_events)
+
+addWorksheet(wb, "SpeciesErrors")
+writeData(wb, "SpeciesErrors", sp_errors)
+
+addWorksheet(wb, "FolderNames")
+writeData(wb, "FolderNames", className_check)
+
+file_loc <- sub(" ","",ServerKey)
+file_loc <- gsub("[-&@]", "_", file_loc)
+
+# Save the workbook
+saveWorkbook(wb, paste0("www/data_qaqc_workbook_",file_loc,".xlsx"), overwrite = TRUE)
