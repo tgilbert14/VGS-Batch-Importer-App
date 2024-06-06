@@ -141,8 +141,8 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
       ## move site to correct folder or create parent folders
       print("next excel tab...")
       
-      ## reset data frame
-      rm(data_import)
+      ## reset data frame - do not need, in function so value is not saved to global
+      #rm(data_import)
       
     }
     
@@ -1246,17 +1246,36 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     
     ## Species replace file if box checked
     if (input$qaqc == TRUE) {
-      sp_replace_file <- openxlsx::read.xlsx("www/SpeciesReplace.xlsx")
+      
+      ## if does not exist, read file in
+      if (!exists("sp_replace_file")) {
+        sp_replace_file <- openxlsx::read.xlsx("www/SpeciesReplace.xlsx")
+      }
       
       k <- 1
-      while (k < nrow(sp_replace_file) + 1) {
-        data$...2 <- sub(
-          pattern = paste0("^", sp_replace_file$OldCode[k], "$"),
-          replacement = paste0(sp_replace_file$NewCode[k]),
-          x = data$...2
-        )
-        k <- k + 1
+      ## trying to account for different data sheets (diff col depending on forest)
+      if (SyncKey == "USFS R4-BT") {
+        ## using data$...2
+        while (k < nrow(sp_replace_file) + 1) {
+          data$...2 <- sub(
+            pattern = paste0("^", sp_replace_file$OldCode[k], "$"),
+            replacement = paste0(sp_replace_file$NewCode[k]),
+            x = data$...2
+          )
+          k <- k + 1
+        }
+      } else {
+        ## data$...1
+        while (k < nrow(sp_replace_file) + 1) {
+          data$...1 <- sub(
+            pattern = paste0("^", sp_replace_file$OldCode[k], "$"),
+            replacement = paste0(sp_replace_file$NewCode[k]),
+            x = data$...1
+          )
+          k <- k + 1
+        }
       }
+      ## end of is/else...
     }
     ## End of qaqc species replace file
     
@@ -1555,17 +1574,36 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     
     ## Species replace file if box checked
     if (input$qaqc == TRUE) {
-      sp_replace_file <- openxlsx::read.xlsx("www/SpeciesReplace.xlsx")
-
-      k <- 1
-      while (k < nrow(sp_replace_file) + 1) {
-        data$Species <- sub(
-          pattern = paste0("^", sp_replace_file$OldCode[k], "$"),
-          replacement = paste0(sp_replace_file$NewCode[k]),
-          x = data$Species
-        )
-        k <- k + 1
+      
+      ## if does not exist, read file in
+      if (!exists("sp_replace_file")) {
+        sp_replace_file <- openxlsx::read.xlsx("www/SpeciesReplace.xlsx")
       }
+      
+      k <- 1
+      ## trying to account for different data sheets (diff col depending on forest)
+      if (SyncKey == "USFS R4-BT") {
+        ## using data$...2
+        while (k < nrow(sp_replace_file) + 1) {
+          data$...2 <- sub(
+            pattern = paste0("^", sp_replace_file$OldCode[k], "$"),
+            replacement = paste0(sp_replace_file$NewCode[k]),
+            x = data$...2
+          )
+          k <- k + 1
+        }
+      } else {
+        ## data$...1
+        while (k < nrow(sp_replace_file) + 1) {
+          data$...1 <- sub(
+            pattern = paste0("^", sp_replace_file$OldCode[k], "$"),
+            replacement = paste0(sp_replace_file$NewCode[k]),
+            x = data$...1
+          )
+          k <- k + 1
+        }
+      }
+      ## end of is/else...
     }
     ## End of qaqc species replace file
     
