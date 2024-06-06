@@ -4,14 +4,14 @@
 ## silence loading warning for sp/rgdal
 "rgdal_show_exportToProj4_warnings"="none"
 ## GLOBAL ----------------------------------------------------------------------
-library(openxlsx)
-library(tidyverse)
-library(DBI)
-library(RSQLite)
-library(uuid)
-library(sf)
-library(sp)
-library(rgdal)
+# library(openxlsx)
+# library(tidyverse)
+# library(DBI)
+# library(RSQLite)
+# library(uuid)
+# library(sf)
+# library(sp)
+# library(rgdal)
 
 #e.g., Region='04', Forest_Num='03'
 #usfs_folder_names(Region = "04", Forest_Num = "03")
