@@ -1,3 +1,5 @@
+{ ## for quick report
+
 ## read in output log for qa/qc reports ->
 qaqc <- read_csv(paste0(app_path, "/www/r_output.txt"))
 #View(qaqc)
@@ -255,7 +257,7 @@ write.xlsx(freq_comp_check, paste0(app_path, "/www/Conflicts/possible_duplicated
 #   file.show(paste0(app_path,"/www/Conflicts/possible_duplicated_species.xlsx"))
 # }
 
-## special for RR
+## special for RR state check...
 if (ServerKey == "USFS R6-RR") {
   ## set USDA states to compare ->
   selected_state <- c("California","Oregon","Washington","Idaho","Nevada")
@@ -321,9 +323,11 @@ if (ServerKey == "USFS R6-RR") {
   updated_not_in_2<- left_join(updated_not_in, vgs_species_list)
 
   ## add column so can merge and know its not in state lists
-  updated_not_in_2[2] <- "Not in USDA list for CA, WA, OR, ID, or NV"
-  names(updated_not_in_2)[2] <- "Species in USDA plant list?"
-  
+  if (nrow(updated_not_in_2) > 0) {
+    updated_not_in_2[2] <- "Not in USDA list for CA, WA, OR, ID, or NV"
+    names(updated_not_in_2)[2] <- "Species in USDA plant list?"
+  }
+
   sp_by_state_check_all <- left_join(species_count_w_siteInfo, updated_not_in_2)
   
   sp_by_state_check_all$`Species in USDA plant list?`[is.na(sp_by_state_check_all$`Species in USDA plant list?`)] <- "yes"
@@ -333,8 +337,11 @@ if (ServerKey == "USFS R6-RR") {
   names(sp_by_state_check_all)[7] <- "SiteHits"
   names(sp_by_state_check_all)[8] <- "InUSDA_PlantList?"
   
+  sp_by_state_check_all <- sp_by_state_check_all %>% 
+    arrange(`InUSDA_PlantList?`)
+  
   write.xlsx(sp_by_state_check_all, paste0(app_path, "/www/Conflicts/sp_by_state_check_all.xlsx"))
-  file.show(paste0(app_path, "/www/Conflicts/sp_by_state_check_all.xlsx"))
+  #file.show(paste0(app_path, "/www/Conflicts/sp_by_state_check_all.xlsx"))
 }
 
 
@@ -385,3 +392,6 @@ file_loc <- gsub("[-&@]", "_", file_loc)
 # Save the workbook
 saveWorkbook(wb, paste0("www/data_qaqc_workbook_",file_loc,".xlsx"), overwrite = TRUE)
 file.show(paste0(app_path,"/www/data_qaqc_workbook_",file_loc,".xlsx"))
+
+}
+
