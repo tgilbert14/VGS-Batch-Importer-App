@@ -1,5 +1,3 @@
-{ ## for quick report
-
 ## read in output log for qa/qc reports ->
 qaqc <- read_csv(paste0(app_path, "/www/r_output.txt"))
 #View(qaqc)
@@ -18,19 +16,22 @@ sp_errors <- sp_conflicts %>%
   arrange(sp_conflicts)
 
 write.xlsx(sp_errors, paste0(app_path, "/www/Conflicts/sp_errors.xlsx"))
-# if (nrow(sp_errors)>1) {
-#   file.show(paste0(app_path, "/www/Conflicts/sp_errors.xlsx"))
-# }
+if (power_mode == TRUE) {
+  if (nrow(sp_errors)>1) {
+    file.show(paste0(app_path, "/www/Conflicts/sp_errors.xlsx"))
+  }
+}
 
 ## looking for ground cover counts in log
 gc_sum <- qaqc[grep("ground cover points", qaqc[[1]]), ]
 names(gc_sum)[1] <- "Ground Cover Counts"
 ## report generated and opened if data
 write.xlsx(gc_sum, paste0(app_path, "/www/Conflicts/gc_counts.xlsx"))
-# if (nrow(gc_sum)>1) {
-#   file.show(paste0(app_path, "/www/Conflicts/gc_counts.xlsx"))
-# }
-
+if (power_mode == TRUE) {
+  if (nrow(gc_sum)>1) {
+    file.show(paste0(app_path, "/www/Conflicts/gc_counts.xlsx"))
+  }
+}
 ## looking for species counts in VGS .db
 ## Queries to check data in VGS .db
 ## list of all species added - do any of them need to be changed?
@@ -46,9 +47,11 @@ gc_used <- paste0("SELECT DISTINCT PK_Species, SpeciesName, CommonName  from Pro
 ground_covers_used_by_events <- dbGetQuery(mydb, gc_used)
 
 write.xlsx(ground_covers_used_by_events, paste0(app_path, "/www/Conflicts/ground_cover_cat_used.xlsx"))
-# if (nrow(ground_covers_used_by_events)>1) {
-#   file.show(paste0(app_path, "/www/Conflicts/ground_cover_cat_used.xlsx"))
-# }
+if (power_mode == TRUE) {
+  if (nrow(ground_covers_used_by_events)>1) {
+    file.show(paste0(app_path, "/www/Conflicts/ground_cover_cat_used.xlsx"))
+  }
+}
 
 ## Check all species added
 sp_count <- paste0("SELECT DISTINCT PK_Species, Species.NewSynonym as 'Updated Code', SpeciesName, CommonName, SpeciesQualifier, Count(PK_Species)  from Protocol
@@ -79,9 +82,11 @@ species_count_w_siteInfo <- full_join(species_count, species_seen_at_each_site)
 #   arrange(SpeciesName)
 
 write.xlsx(species_count_w_siteInfo, paste0(app_path, "/www/Conflicts/species_count_w_siteInfo.xlsx"))
-# if (nrow(species_count_w_siteInfo)>1) {
-#   file.show(paste0(app_path, "/www/Conflicts/species_count_w_siteInfo.xlsx"))
-# }
+if (power_mode == TRUE) {
+  if (nrow(species_count_w_siteInfo)>1) {
+    file.show(paste0(app_path, "/www/Conflicts/species_count_w_siteInfo.xlsx"))
+  }
+}
 
 ## Check all species added BY SITE
 sp_count_site <- paste0("SELECT DISTINCT SiteID, Protocol.Date, PK_Species, Species.NewSynonym as 'Updated Code', SpeciesName, CommonName, SpeciesQualifier, Count(PK_Species)  from Protocol
@@ -140,18 +145,24 @@ gc_miss <- qaqc[grep("Warning,", qaqc[[1]]), ]
 names(gc_miss)[1] <- "Ground Cover Count Warnings"
 
 write.xlsx(gc_miss, paste0(app_path, "/www/Conflicts/gc_missing_or_too_much.xlsx"))
-# if (nrow(gc_miss)>1) {
-#   file.show(paste0(app_path,"/www/Conflicts/gc_missing_or_too_much.xlsx"))
-# }
+if (power_mode == TRUE) {
+  if (nrow(gc_miss)>1) {
+    file.show(paste0(app_path,"/www/Conflicts/gc_missing_or_too_much.xlsx"))
+  }
+}
+
 
 ## GC % errors
 gc_perc_errors <- qaqc[grep("GC % sums", qaqc[[1]]), ]
 names(gc_perc_errors)[1] <- "Ground Cover % Warnings"
 
 write.xlsx(gc_perc_errors, paste0(app_path, "/www/Conflicts/gc_perc_errors.xlsx"))
-# if (nrow(gc_perc_errors)>0) {
-#   file.show(paste0(app_path,"/www/Conflicts/gc_perc_errors.xlsx"))
-# }
+if (power_mode == TRUE) {
+  if (nrow(gc_perc_errors)>0) {
+    file.show(paste0(app_path,"/www/Conflicts/gc_perc_errors.xlsx"))
+  }
+}
+
 
 ## Script to pull siteclass names for folders to look for spelling errors to fix
 siteClass <- paste0("SELECT ClassName from SiteClass
@@ -164,7 +175,9 @@ siteClassNames <- dbGetQuery(mydb, siteClass)
 
 className_check <- unique(siteClassNames)
 write.xlsx(className_check, paste0(app_path, "/www/SiteClassNameChecks/FolderNames.xlsx"))
-#file.show(paste0(app_path,"/www/SiteClassNameChecks/FolderNames.xlsx"))
+if (power_mode == TRUE) {
+  file.show(paste0(app_path,"/www/SiteClassNameChecks/FolderNames.xlsx"))
+}
 
 
 ## query transects in use for freq and count # of species per event
@@ -222,18 +235,24 @@ see_me_is.na$`count(PK_Sample)`[is.na(see_me_is.na$`count(PK_Sample)`)] <- 0
 see_me_gc_errors <- rbind(see_me_unexpected, see_me_is.na)
 
 write.xlsx(see_me_gc_errors, paste0(app_path, "/www/Conflicts/possible_data_errors_gc.xlsx"))
-# if (nrow(see_me_gc_errors)>0) {
-#   file.show(paste0(app_path,"/www/Conflicts/possible_data_errors_gc.xlsx"))
-# }
+if (power_mode == TRUE) {
+  if (nrow(see_me_gc_errors)>0) {
+    file.show(paste0(app_path,"/www/Conflicts/possible_data_errors_gc.xlsx"))
+  }
+}
+
 
 ## checking for messed up dates
 date_check <- data_summary %>% 
   filter(str_detect(Date, fixed("NA")))
 
 write.xlsx(date_check, paste0(app_path, "/www/Conflicts/possible_date_errors.xlsx"))
-# if (nrow(date_check)>0) {
-#   file.show(paste0(app_path,"/www/Conflicts/possible_date_errors.xlsx"))
-# }
+if (power_mode == TRUE) {
+  if (nrow(date_check)>0) {
+    file.show(paste0(app_path,"/www/Conflicts/possible_date_errors.xlsx"))
+  }
+}
+
 
 ## looking for duplicates for species code in data - possible comparison report conflicts to fix
 sp_qc_data <- read.xlsx(paste0(app_path,"/www/Conflicts/species_count_by_site.xlsx"))
@@ -253,9 +272,12 @@ freq_comp_check <- rbind(message_for_sheet, possible_duplicated_species)
 
 ## run comparison report and try to fix species for these
 write.xlsx(freq_comp_check, paste0(app_path, "/www/Conflicts/possible_duplicated_species.xlsx"))
-# if (nrow(freq_comp_check)>0) {
-#   file.show(paste0(app_path,"/www/Conflicts/possible_duplicated_species.xlsx"))
-# }
+if (power_mode == TRUE) {
+  if (nrow(freq_comp_check)>0) {
+    file.show(paste0(app_path,"/www/Conflicts/possible_duplicated_species.xlsx"))
+  }
+}
+
 
 ## special for RR state check...
 if (ServerKey == "USFS R6-RR") {
@@ -326,72 +348,104 @@ if (ServerKey == "USFS R6-RR") {
   if (nrow(updated_not_in_2) > 0) {
     updated_not_in_2[2] <- "Not in USDA list for CA, WA, OR, ID, or NV"
     names(updated_not_in_2)[2] <- "Species in USDA plant list?"
-  }
-
+  
   sp_by_state_check_all <- left_join(species_count_w_siteInfo, updated_not_in_2)
-  
   sp_by_state_check_all$`Species in USDA plant list?`[is.na(sp_by_state_check_all$`Species in USDA plant list?`)] <- "yes"
-  
+  names(sp_by_state_check_all)[8] <- "InUSDA_PlantList?"
+  sp_by_state_check_all <- sp_by_state_check_all %>% 
+    arrange(`InUSDA_PlantList?`)
+  }
+  #View(sp_by_state_check_all)
   names(sp_by_state_check_all)[2] <- "UpdatedCode"
   names(sp_by_state_check_all)[6] <- "SampleHits"
   names(sp_by_state_check_all)[7] <- "SiteHits"
-  names(sp_by_state_check_all)[8] <- "InUSDA_PlantList?"
   
-  sp_by_state_check_all <- sp_by_state_check_all %>% 
-    arrange(`InUSDA_PlantList?`)
+  # # get siteID for species Not in USDA list
+  # sp_find_siteID <- sp_by_state_check_all %>% 
+  #   filter(`InUSDA_PlantList?` == "Not in USDA list for CA, WA, OR, ID, or NV")
+  #   t=1
+  #   
+  #   temp_sp_find<- sp_by_state_check_all$PK_Species[t]
+  #   temp_qualifier_find<- sp_by_state_check_all$SpeciesQualifier[t]
+  #   # if no qualifier - use IS NULL
+  #   if (is.na(temp_qualifier_find)) {
+  #     find_site_q <- paste0("select DISTINCT SiteID, Protocol.Date, PK_Species, SpeciesQualifier from Protocol
+  # INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
+  # INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
+  # INNER JOIN Site ON Site.PK_Site = Event.FK_Site
+  # INNER JOIN AncestryCombinedPath ON AncestryCombinedPath.PK_Site = Site.PK_Site
+  # INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
+  # INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
+  # where PK_Species = '",temp_sp_find,"' and SpeciesQualifier IS NULL")
+  #   } else { # has a qualifier
+  #     find_site_q <- paste0("select DISTINCT SiteID, Protocol.Date, PK_Species, SpeciesQualifier from Protocol
+  # INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
+  # INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
+  # INNER JOIN Site ON Site.PK_Site = Event.FK_Site
+  # INNER JOIN AncestryCombinedPath ON AncestryCombinedPath.PK_Site = Site.PK_Site
+  # INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
+  # INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
+  # where PK_Species = '",temp_sp_find,"' and SpeciesQualifier = '",temp_qualifier_find,"'")
+  #   }
+  #   
+  #   found_sites<- dbGetQuery(mydb, find_site_q)
   
   write.xlsx(sp_by_state_check_all, paste0(app_path, "/www/Conflicts/sp_by_state_check_all.xlsx"))
-  #file.show(paste0(app_path, "/www/Conflicts/sp_by_state_check_all.xlsx"))
+  if (power_mode == TRUE) {
+    file.show(paste0(app_path, "/www/Conflicts/sp_by_state_check_all.xlsx"))
+  }
 }
 
 
-
-## FINAL WB ----
-wb <- createWorkbook()
-# Add a worksheet to the workbook
-addWorksheet(wb, "SpeciesCountEval")
-# Write your data frame (df) to the worksheet
-writeData(wb, "SpeciesCountEval", sp_by_state_check_all)
-
-# highlightStyle <- createStyle(fgFill = "#FFFF00")  # Yellow fill
-# conditionalFormatting(wb, "SpeciesCounts", cols = 1:nrow(species_count), rows = 1:ncol(species_count), rule = "(H:H)>100", style = highlightStyle)
-
-addWorksheet(wb, "SpeciesLookupBySite")
-writeData(wb, "SpeciesLookupBySite", species_count_by_site)
-
-addWorksheet(wb, "FreqComparisons")
-writeData(wb, "FreqComparisons", freq_comp_check)
-
-addWorksheet(wb, "SpeciesErrors")
-writeData(wb, "SpeciesErrors", sp_errors)
-
-addWorksheet(wb, "SiteDateErrors")
-writeData(wb, "SiteDateErrors", date_check)
-
-addWorksheet(wb, "PossibleGC_errors")
-writeData(wb, "PossibleGC_errors", see_me_gc_errors)
-
-addWorksheet(wb, "GC_percent_errors")
-writeData(wb, "GC_percent_errors", gc_perc_errors)
-
-addWorksheet(wb, "GCwarnings")
-writeData(wb, "GCwarnings", gc_miss)
-
-addWorksheet(wb, "GCsums")
-writeData(wb, "GCsums", gc_sum)
-
-addWorksheet(wb, "GCused")
-writeData(wb, "GCused", ground_covers_used_by_events)
-
-addWorksheet(wb, "FolderNames")
-writeData(wb, "FolderNames", className_check)
-
-file_loc <- sub(" ","",ServerKey)
-file_loc <- gsub("[-&@]", "_", file_loc)
-
-# Save the workbook
-saveWorkbook(wb, paste0("www/data_qaqc_workbook_",file_loc,".xlsx"), overwrite = TRUE)
-file.show(paste0(app_path,"/www/data_qaqc_workbook_",file_loc,".xlsx"))
-
+# only create workbook when not in power_mode
+if (power_mode == FALSE) {
+  ## FINAL WB ----
+  wb <- createWorkbook()
+  # Add a worksheet to the workbook
+  addWorksheet(wb, "SpeciesCountEval")
+  # Write your data frame (df) to the worksheet
+  writeData(wb, "SpeciesCountEval", sp_by_state_check_all)
+  # auto width columns ?
+  setColWidths(wb, "SpeciesCountEval", cols = 1:ncol(sp_by_state_check_all), widths = "auto")
+  
+  # highlightStyle <- createStyle(fgFill = "#FFFF00")  # Yellow fill
+  # conditionalFormatting(wb, "SpeciesCounts", cols = 1:nrow(species_count), rows = 1:ncol(species_count), rule = "(H:H)>100", style = highlightStyle)
+  
+  addWorksheet(wb, "SpeciesLookupBySite")
+  writeData(wb, "SpeciesLookupBySite", species_count_by_site)
+  
+  addWorksheet(wb, "FreqComparisons")
+  writeData(wb, "FreqComparisons", freq_comp_check)
+  
+  addWorksheet(wb, "SpeciesErrors")
+  writeData(wb, "SpeciesErrors", sp_errors)
+  
+  addWorksheet(wb, "SiteDateErrors")
+  writeData(wb, "SiteDateErrors", date_check)
+  
+  addWorksheet(wb, "PossibleGC_errors")
+  writeData(wb, "PossibleGC_errors", see_me_gc_errors)
+  
+  addWorksheet(wb, "GC_percent_errors")
+  writeData(wb, "GC_percent_errors", gc_perc_errors)
+  
+  addWorksheet(wb, "GCwarnings")
+  writeData(wb, "GCwarnings", gc_miss)
+  
+  addWorksheet(wb, "GCsums")
+  writeData(wb, "GCsums", gc_sum)
+  
+  addWorksheet(wb, "GCused")
+  writeData(wb, "GCused", ground_covers_used_by_events)
+  
+  addWorksheet(wb, "FolderNames")
+  writeData(wb, "FolderNames", className_check)
+  
+  file_loc <- sub(" ","",ServerKey)
+  file_loc <- gsub("[-&@]", "_", file_loc)
+  
+  # Save the workbook
+  saveWorkbook(wb, paste0("www/data_qaqc_workbook_",file_loc,".xlsx"), overwrite = TRUE)
+  file.show(paste0(app_path,"/www/data_qaqc_workbook_",file_loc,".xlsx"))
 }
 
