@@ -15,5 +15,10 @@ specific imports
 >Check data for errors, pick ~5-10% of random data and intensely evaluate that the data
 is being inserted as expected (depended on import size)
 >Merge sites with multiple years data (or develop script to merge them)
+>Go through Site and Protocol Notes and fix obvious spelling errors
+>Checking location coordinates make sense for site name and folder structure
+>Get rid of duplicate locators from merge
+>Update to USFS naming convention
 >Run comparison reports to see for species conflicts (or develop script)
->Create report for user to do a final species review?
+>Test reporting options work and that data is displays as expected
+>Put data on DEV to test, then PROD if everything looks good!

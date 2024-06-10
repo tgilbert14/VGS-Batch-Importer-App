@@ -232,9 +232,15 @@ server <- function(input, output, session) {
     read_import_data(Protocol = input$Protocol, ServerKey = input$ServerKey, Protocol_2 = input$Protocol_2)
     
     ## updating attribute table/form settings when needed
+    shinyalert("Updating...", "attributes to unhide data", type = "info", immediate = T)
     source(paste0(app_path, "/Functions/attribute_update.R"), local = T)
     
+    ## update locator sync states so they show up - make 1 higher than site SyncState
+    shinyalert("Updating...", "locator SyncKey to show up on server after sync", type = "info", immediate = T)
+    source(paste0(app_path, "/Functions/locatorSyncState_update.R"), local = T)
+    
     ## pop up for species errors in VGS
+    shinyalert("Creating...", "QAQC workbook for data checks", type = "info", immediate = T)
     source(paste0(app_path, "/Functions/species_qaqc_check.R"), local = T)
     
     ## close connections from local VGS db
