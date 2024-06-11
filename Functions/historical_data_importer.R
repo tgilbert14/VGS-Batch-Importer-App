@@ -294,6 +294,25 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
     site_notes <- paste0("'", site_notes, "'")
   }
   
+  ## extract num from slope/aspect/elevation if has value
+  if (Slope != "NULL") {
+    digit.slope <- as.numeric(gsub("[^0-9]", "", Slope))
+    Slope <- digit.slope
+  }
+  if (Aspect != "NULL") {
+    digit.aspect <- as.numeric(gsub("[^0-9]", "", Aspect))
+    Aspect <- digit.aspect
+  }
+  if (Elevation != "NULL") {
+    digit.elevation <- as.numeric(gsub("[^0-9]", "", Elevation))
+    Elevation <- digit.elevation
+  }
+  
+  if ((is.na(as.numeric(Aspect))&&Aspect!="NULL")  || (is.na(as.numeric(Slope))&&Slope!="NULL") || (is.na(as.numeric(Elevation))&&Elevation!="NULL"))  {
+    print("Error! Aspect, Slope or Elevation contain an unexpected symbol")
+    stop("Error! Aspect, Slope or Elevation contain an unexpected symbol")
+  }
+  
   ## Guid for site pk
   PK_Site <- GUID()
   ## save for another function - siteClassLink
