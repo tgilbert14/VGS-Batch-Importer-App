@@ -143,7 +143,7 @@ ui <- fluidPage(
   shiny::actionButton(icon = icon("wand-magic-sparkles"), inputId = "usda_check",
                       label = "Species Check", width = 140),
   ## update syncKey for loctor data after download syncable folders...
-  shiny::actionButton(icon = icon("map"), inputId = "synckey.update",
+  shiny::actionButton(icon = icon("skull"), inputId = "synckey.update",
                       label = "Update Locator SyncKey", width = 200)
   
 ) ## end of UI
