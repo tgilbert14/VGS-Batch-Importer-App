@@ -85,8 +85,8 @@ ui <- fluidPage(
       ## pop up UI's here after Protocol entry - see server side
       shiny::actionButton(inputId = "create", label = "Batch Import Data", width = "100%"),
       br(),
-      checkboxInput("spec_mode", "Use Special Insert?", value = F),
-      br(),
+      #checkboxInput("spec_mode", "Use Special Insert?", value = F),
+      #br(),
  
       ## if test mode
       if (test_mode == TRUE) {
@@ -141,7 +141,11 @@ ui <- fluidPage(
                       label = "Count", width = 80),
   ## check species against USDA plant database for that state
   shiny::actionButton(icon = icon("wand-magic-sparkles"), inputId = "usda_check",
-                      label = "Species Check", width = 140)
+                      label = "Species Check", width = 140),
+  ## update syncKey for loctor data after download syncable folders...
+  shiny::actionButton(icon = icon("map"), inputId = "synckey.update",
+                      label = "Update Locator SyncKey", width = 200)
+  
 ) ## end of UI
 ## -----------------------------------------------------------------------------
 
@@ -234,14 +238,14 @@ server <- function(input, output, session) {
     ## updating attribute table/form settings when needed
     shinyalert("Updating...", "attributes to unhide data", type = "info", immediate = T)
     source(paste0(app_path, "/Functions/attribute_update.R"), local = T)
-    
-    ## update locator sync states so they show up - make 1 higher than site SyncState
-    shinyalert("Updating...", "locator SyncKey to show up on server after sync", type = "info", immediate = T)
-    source(paste0(app_path, "/Functions/locatorSyncState_update.R"), local = T)
+    Sys.sleep(1)
+    shinyalert("Done!", "Attributes Updated for Protocols", type = "success", immediate = T)
     
     ## pop up for species errors in VGS
     shinyalert("Creating...", "QAQC workbook for data checks", type = "info", immediate = T)
     source(paste0(app_path, "/Functions/species_qaqc_check.R"), local = T)
+    Sys.sleep(1)
+    shinyalert("Done!", "QAQC workbook created and opening...", type = "success", immediate = T)
     
     ## close connections from local VGS db
     DBI::dbDisconnect(mydb)
@@ -368,8 +372,7 @@ server <- function(input, output, session) {
           final_sp_list <- unique(rbind(sp_codes_avaliable_by_state, more_sp_codes_avaliable_by_state)) %>%
             arrange(code)
           
-          ## merge w/ vgs list
-          
+          ## merge w/ vgs list ?
 
           
         } else { ## if more than 1 state selected
@@ -400,10 +403,7 @@ server <- function(input, output, session) {
           final_sp_list <- unique(final_sp_list) %>% 
             arrange(code)
           
-          ## merge w/ vgs list
-          
-          
-          
+          ## merge w/ vgs list ?
           
         }
         
@@ -458,6 +458,16 @@ server <- function(input, output, session) {
     }) ## end of state select observable event
 
   }) ## end of click species check button
+  
+  ## Locator update click
+  observeEvent(input$synckey.update, {
+    ## update locator sync states so they show up - make 1 higher than site SyncState
+    shinyalert("Updating...", "Locator SyncKey Updating to Site.Synckey+1", type = "info", immediate = T)
+    source(paste0(app_path, "/Functions/locatorSyncState_update.R"), local = T)
+    Sys.sleep(2)
+    shinyalert("Done!", "Locator SyncKey Updating Complete", type = "success", immediate = T)
+  })
+  ## End of Locator update button click
   
   ## clear variables on stop
   onStop(function() {
