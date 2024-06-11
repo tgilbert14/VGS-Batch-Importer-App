@@ -7,7 +7,7 @@ site_sync.data <- dbGetQuery(mydb, siteSyncCheck)
 
 # update locator for that site.SyncState +1 for locator.SyncState
 locator_update <- paste0("Update locator
-Set SyncKey = ",site_sync.data$`MAX(SyncKey)`,"
+Set SyncKey = ",as.numeric(site_sync.data$`MAX(SyncKey)`+1),"
 Where PK_Locator IS NOT NULL
 And DDLat IS NOT NULL
 And DDlong IS NOT NULL")
