@@ -248,8 +248,9 @@ batch_import <<- function(historical_raw_data) {
     print(paste0("Inserting data from ", active_sheets[x]," for ",site_name))
     
     ## create site and data event
+    Protocol2<- Protocol_2
     create_site(
-      ProtocolName = Protocol, ProtocolName_2 = Protocol_2, SiteID = site_name,
+      ProtocolName = Protocol, ProtocolName_2 = Protocol2, SiteID = site_name,
       Event_Date = event_date, Elevation = elevation, Slope = slope, Aspect = aspect,
       DDLat = lat, DDLong = long, EventNotes = EventNotes, Notes = site_notes
     )
@@ -1412,7 +1413,8 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
           
           ## only insert if not in power mode
           if (power_mode == "FALSE") {
-            print(paste("Inserting",toupper(data[d, ][[1]]),"on belt/transect",Transect))
+            ## for troubleshootin
+            #print(paste("Inserting NF code",toupper(data[d, ][[1]]),"on Transect",Transect,"- Sample",s,"- Element",Element,"-",SubElement))
             ## insert NF data
             dbExecute(mydb, insert_sample)
           }
@@ -1616,36 +1618,37 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
       ## if does not exist, read file in
       if (!exists("sp_replace_file")) {
         sp_replace_file <- openxlsx::read.xlsx("www/SpeciesReplace.xlsx")
+        sp_replace_file <<- sp_replace_file
       }
       
       print("Checking if species need to be replaced for LPI...")
       
       k <- 1
       ## trying to account for different data sheets (diff col depending on forest)
-      if (ServerKey == "USFS R4-BT") {
+      #if (ServerKey == "USFS R4-BT") {
+      ## always runs for now...
+      if (0==0) {
         ## using data$...2
         while (k < nrow(sp_replace_file) + 1) {
           
-          #print(paste("checking",sp_replace_file$OldCode[k]))
-          
-          data$...2 <- sub(
+          data$Species <- sub(
             pattern = paste0("^", sp_replace_file$OldCode[k], "$"),
             replacement = paste0(sp_replace_file$NewCode[k]),
             x = data$...2
           )
           k <- k + 1
         }
-      } else {
-        ## data$...1
-        while (k < nrow(sp_replace_file) + 1) {
-          data$...1 <- sub(
-            pattern = paste0("^", sp_replace_file$OldCode[k], "$"),
-            replacement = paste0(sp_replace_file$NewCode[k]),
-            x = data$...1
-          )
-          k <- k + 1
-        }
-      }
+      } #else {
+      #   ## leave here in case need to update?
+      #   while (k < nrow(sp_replace_file) + 1) {
+      #     data$...1 <- sub(
+      #       pattern = paste0("^", sp_replace_file$OldCode[k], "$"),
+      #       replacement = paste0(sp_replace_file$NewCode[k]),
+      #       x = data$...1
+      #     )
+      #     k <- k + 1
+      #   }
+      # }
       ## end of is/else...
     }
     ## End of qaqc species replace file
@@ -1734,6 +1737,10 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
       
       ## only insert if not in power mode
       if (power_mode == "FALSE") {
+        
+        ## for troubleshootin
+        #print(paste("Inserting NF code",toupper(data[d, ][[1]]),"on Transect",Transect,"- Sample",s,"- Element",Element,"-",SubElement))
+        
         ## insert LPI data
         dbExecute(mydb, insert_sample)
       }
