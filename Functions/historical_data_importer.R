@@ -249,11 +249,12 @@ batch_import <<- function(historical_raw_data) {
     
     ## create site and data event
     Protocol2<- Protocol_2
-    create_site(
+    ## Protocol2 IS NULL sometimes and gives warning - supressing it cuz I hate it...
+    suppressWarnings(create_site(
       ProtocolName = Protocol, ProtocolName_2 = Protocol2, SiteID = site_name,
       Event_Date = event_date, Elevation = elevation, Slope = slope, Aspect = aspect,
       DDLat = lat, DDLong = long, EventNotes = EventNotes, Notes = site_notes
-    )
+    ))
   }
   
   ## OTHER TABS ---- other than the first and not "site Meta Data" tabs
@@ -1634,7 +1635,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
           data$Species <- sub(
             pattern = paste0("^", sp_replace_file$OldCode[k], "$"),
             replacement = paste0(sp_replace_file$NewCode[k]),
-            x = data$...2
+            x = data$Species
           )
           k <- k + 1
         }
