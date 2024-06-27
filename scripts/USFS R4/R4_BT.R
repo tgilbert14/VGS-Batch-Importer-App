@@ -215,6 +215,7 @@ if (length(grep("Nested Frequency", active_sheets[x])) == 1) {
     ## go through each row and update species name and common name
     move <- 1
     while (move < nrow(nf_data_and_common) + 1) {
+
       ## reset names for if statements
       new_sp_name <- NA
       new_common_name <- NA
@@ -225,6 +226,9 @@ if (length(grep("Nested Frequency", active_sheets[x])) == 1) {
       
       ## if could not find by code, try search by species column
       if (length(find) == 0) {
+        
+        print(paste("Could not find",nf_data_and_common[[1]][move],"- checking other columns for correct species"))
+        
         find <- grep(paste0("^", nf_data_and_common[[3]][move], "$"), vgs_species_list_more$SpeciesName)
         ## if still nothing... check if species column in wrong column
         if (length(find) == 0) {
@@ -238,8 +242,6 @@ if (length(grep("Nested Frequency", active_sheets[x])) == 1) {
           }
           ## if still nothing - does not exist
           if (length(find) == 0) {
-            ## stop/error/alert if species not found
-            #print(paste0("Species: ", nf_data_and_common[[1]][move], " - '", nf_data_and_common[[3]][move], "' not found in VGS!"))
             new_sp_name <- "No species name found"
             new_common_name <- "No common name found"
           }
@@ -289,7 +291,9 @@ EventName = 'Frequency (by quadrat)'")
     checked_PK_Event <- Event_guid_info$`quote(PK_Event)`[1]
     
     ## get rid of nf_data just in case...
-    rm(nf_data)
+    #rm(nf_data)
+    
+    ## sum col is taken away in main function ->
     
     ## insert nested freq data
     insert_data(data = nest_freq_ready, method = "NF", FK_Event = checked_PK_Event, Transect = belt_num, SyncKey = 33, SyncState = 1)
