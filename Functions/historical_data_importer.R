@@ -11,6 +11,10 @@
 ##  function(s) for import data process. Primarily gets raw data and passes it
 ##  on to functions over and over until all data selected is imported...
 read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
+  
+  ## saving serverKey to global environment
+  #ServerKey<<- ServerKey
+  
   ## get species list from database
   vgs_species_list_q <- paste0("SELECT PK_Species from Species where List = 'NRCS'")
   vgs_species_list <<- dbGetQuery(mydb, vgs_species_list_q)
@@ -1236,6 +1240,7 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
 ## INSERT DATA FUNCTION --------------------------------------------------------
 ## insert statement to add data - nested frequency
 insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", SampleNumber = "NULL", Element = "NULL", SubElement = "NULL", FieldSymbol, SpeciesQualifier = "NULL", FieldQualifier = "NULL", cParameter = "NULL", cParameter2 = "NULL", cParameter3 = "NULL", nValue = "NULL", nValue2 = "NULL", nValue3 = "NULL", cValue = "NULL", cValue2 = "NULL", cValue3 = "NULL", SyncKey, SyncState) {
+  
   ## If Nested Freq - reset values for insert for that specific method
   if (method == "NF") {
     # data<- nest_freq_ready
@@ -1260,22 +1265,34 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     # SyncState <- 1
     # power_mode <- FALSE
     
+    print(paste("Inserting NF data..."))
+    
     ## data validation check function
     data_quality_data_frame(data)
     
     ## Species replace file if box checked
     if (input$qaqc == TRUE) {
-      
+      print("Reading in SpeciesReplace File...")
       ## if does not exist, read file in
       if (!exists("sp_replace_file")) {
         sp_replace_file <- openxlsx::read.xlsx("www/SpeciesReplace.xlsx")
+        ## check state of species replace file
+        if (length(sp_replace_file$OldCode) != length(sp_replace_file$NewCode)) {
+          print("Incomplete SpeciesReplace file, rows don't match...")
+          stop("Incomplete SpeciesReplace file, rows don't match...")
+        }
       }
+      
+      print("Checking if species need to be replaced for NF...")
       
       k <- 1
       ## trying to account for different data sheets (diff col depending on forest)
-      if (SyncKey == "USFS R4-BT") {
+      if (ServerKey == "USFS R4-BT") {
         ## using data$...2
         while (k < nrow(sp_replace_file) + 1) {
+          
+          #print(paste("checking",sp_replace_file$OldCode[k]))
+          
           data$...2 <- sub(
             pattern = paste0("^", sp_replace_file$OldCode[k], "$"),
             replacement = paste0(sp_replace_file$NewCode[k]),
@@ -1284,7 +1301,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
           k <- k + 1
         }
       } else {
-        ## data$...1
+        ## using diff col for diff clients
         while (k < nrow(sp_replace_file) + 1) {
           data$...1 <- sub(
             pattern = paste0("^", sp_replace_file$OldCode[k], "$"),
@@ -1295,6 +1312,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
         }
       }
       ## end of is/else...
+      print("SpeciesReplaced if found...")
     }
     ## End of qaqc species replace file
     
@@ -1394,6 +1412,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
           
           ## only insert if not in power mode
           if (power_mode == "FALSE") {
+            print(paste("Inserting",toupper(data[d, ][[1]]),"on belt/transect",Transect))
             ## insert NF data
             dbExecute(mydb, insert_sample)
           }
@@ -1599,11 +1618,16 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
         sp_replace_file <- openxlsx::read.xlsx("www/SpeciesReplace.xlsx")
       }
       
+      print("Checking if species need to be replaced for LPI...")
+      
       k <- 1
       ## trying to account for different data sheets (diff col depending on forest)
-      if (SyncKey == "USFS R4-BT") {
+      if (ServerKey == "USFS R4-BT") {
         ## using data$...2
         while (k < nrow(sp_replace_file) + 1) {
+          
+          #print(paste("checking",sp_replace_file$OldCode[k]))
+          
           data$...2 <- sub(
             pattern = paste0("^", sp_replace_file$OldCode[k], "$"),
             replacement = paste0(sp_replace_file$NewCode[k]),
