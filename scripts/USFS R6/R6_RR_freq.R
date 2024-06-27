@@ -65,10 +65,6 @@ if (nrow(nf_data) > 0) {
   ## if is NA will make NULL
   nf_data[, 2][is.na(nf_data[, 2])] <- "NULL"
   
-  # ## zeros need to be NA's first
-  # nf_data[nf_data == trimws(0)] <- NA
-  # View(nf_data)
-  
   ## redoing sum columns becuase some errors from user input
   ## looking at totals to filter out no data and get sum
   add_sum_col <- nf_data[5:(ncol(nf_data))]
