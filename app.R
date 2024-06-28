@@ -354,6 +354,8 @@ server <- function(input, output, session) {
         vgs_species_list_q <- paste0("SELECT PK_Species,SpeciesName, CommonName from Species where List = 'NRCS'")
         vgs_species_list <- dbGetQuery(mydb, vgs_species_list_q)
         
+        # test
+        #selected_state<- c("Idaho", "Nevada", "Colorado")
         selected_state<- input$st_pick
         
         ## state selection and file read - only 1 selection
@@ -381,8 +383,8 @@ server <- function(input, output, session) {
           final_sp_list <- data.frame("code" = "")
           while (state_num < length(selected_state)+1) {
             ## goes through each state
-            selected_state<- input$st_pick[state_num]
-            selected_state_file_path<- paste0(app_path,"/www/sp_lists_USDA/",selected_state,".csv")
+            state<- selected_state[state_num]
+            selected_state_file_path<- paste0(app_path,"/www/sp_lists_USDA/",state,".csv")
             
             st_plant_data<- read_csv(selected_state_file_path)
             ## get species code name
@@ -402,9 +404,6 @@ server <- function(input, output, session) {
           
           final_sp_list <- unique(final_sp_list) %>% 
             arrange(code)
-          
-          ## merge w/ vgs list ?
-          
         }
         
         
