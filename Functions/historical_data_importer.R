@@ -1274,18 +1274,18 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     
     ## Species replace file if box checked
     if (input$qaqc == TRUE) {
-      print("Reading in SpeciesReplace File...")
+      print("Reading in SpReplace File...")
       ## if does not exist, read file in
       if (!exists("sp_replace_file")) {
         sp_replace_file <- openxlsx::read.xlsx("www/SpeciesReplace.xlsx")
         ## check state of species replace file
         if (length(sp_replace_file$OldCode) != length(sp_replace_file$NewCode)) {
-          print("Incomplete SpeciesReplace file, rows don't match...")
-          stop("Incomplete SpeciesReplace file, rows don't match...")
+          print("Incomplete SpReplace file, rows don't match...")
+          stop("Incomplete SpReplace file, rows don't match...")
         }
       }
       
-      print("Checking if species need to be replaced for NF...")
+      print("Checking if sp need to be replaced for NF...")
       
       k <- 1
       ## trying to account for different data sheets (diff col depending on forest)
@@ -1314,7 +1314,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
         }
       }
       ## end of is/else...
-      print("SpeciesReplaced if found...")
+      print("Sp Replaced if found...")
     }
     ## End of qaqc species replace file
     
@@ -1622,7 +1622,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
         sp_replace_file <<- sp_replace_file
       }
       
-      print("Checking if species need to be replaced for LPI...")
+      print("Checking if sp need to be replaced for LPI...")
       
       k <- 1
       ## trying to account for different data sheets (diff col depending on forest)

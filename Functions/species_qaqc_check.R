@@ -22,7 +22,7 @@ if (power_mode == TRUE) {
   }
 }
 
-## looking for ground cover counts in log
+## looking for ground cover count567s in log
 gc_sum <- qaqc[grep("ground cover points", qaqc[[1]]), ]
 names(gc_sum)[1] <- "Ground Cover Counts"
 ## report generated and opened if data
@@ -404,9 +404,9 @@ if (power_mode == FALSE) {
   # Add a worksheet to the workbook
   addWorksheet(wb, "SpeciesCountEval")
   # Write your data frame (df) to the worksheet
-  writeData(wb, "SpeciesCountEval", sp_by_state_check_all)
+  writeData(wb, "SpeciesCountEval", species_count_w_siteInfo)
   # auto width columns ?
-  setColWidths(wb, "SpeciesCountEval", cols = 1:ncol(sp_by_state_check_all), widths = "auto")
+  setColWidths(wb, "SpeciesCountEval", cols = 1:ncol(species_count_w_siteInfo), widths = "auto")
   
   # highlightStyle <- createStyle(fgFill = "#FFFF00")  # Yellow fill
   # conditionalFormatting(wb, "SpeciesCounts", cols = 1:nrow(species_count), rows = 1:ncol(species_count), rule = "(H:H)>100", style = highlightStyle)
