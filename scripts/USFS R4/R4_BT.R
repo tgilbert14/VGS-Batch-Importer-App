@@ -227,7 +227,7 @@ if (length(grep("Nested Frequency", active_sheets[x])) == 1) {
       ## if could not find by code, try search by species column
       if (length(find) == 0) {
         
-        print(paste("Could not find",nf_data_and_common[[1]][move],"- checking other columns for correct species"))
+        print(paste("Could not find",nf_data_and_common[[1]][move],"- checking other columns..."))
         
         find <- grep(paste0("^", nf_data_and_common[[3]][move], "$"), vgs_species_list_more$SpeciesName)
         ## if still nothing... check if species column in wrong column
