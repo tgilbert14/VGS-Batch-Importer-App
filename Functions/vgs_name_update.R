@@ -4,6 +4,11 @@
 ## run this after all sites are placed in correct folders
 library(DBI)
 library(tidyverse)
+
+## this is locally, need to tie into app
+#setwd(dirname(rstudioapi::getActiveDocumentContext()[[2]]))
+#app_path <<- getwd()
+
 ## path for VGS database
 db_loc <- "C:/ProgramData/VGSData/VGS50.db"
 ## connecting to VGS database
@@ -40,10 +45,10 @@ site_sql_info <- DBI::dbGetQuery(mydb, site_lookup)
 ## edit/format pasture info file
 s<- pasture_info %>% 
   mutate(PASTURE_NA = paste0(str_to_title(PASTURE_NA)," Pasture"))
-View(s)
+#View(s)
 
 f<- grep(site_sql_info$ClassName[1], s$PASTURE_NA)
 data<- s[f,]
-View(data)
+#View(data)
 
 View(pasture_info)
