@@ -2,7 +2,7 @@
 ## convention used for USFS sites -->
 
 ## silence loading warning for sp/rgdal
-"rgdal_show_exportToProj4_warnings"="none"
+options("rgdal_show_exportToProj4_warnings"="none")
 ## GLOBAL ----------------------------------------------------------------------
 # library(openxlsx)
 # library(tidyverse)
