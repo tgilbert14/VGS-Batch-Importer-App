@@ -396,6 +396,65 @@ if (ServerKey == "USFS R6-RR") {
   }
 }
 
+if (power_mode == FALSE) {
+  ## this works for data with EventNames having both frequency and ground cover
+  ## Check for missing data for GC and Freq data
+  events_check_query<- paste0("SELECT DISTINCT EventName from Protocol
+  INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
+  INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
+  INNER JOIN Site ON Site.PK_Site = Event.FK_Site
+  INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event")
+  
+  events_check <- dbGetQuery(mydb, events_check_query)
+  
+  if ("Frequency (by quadrat)" %in% events_check$`EventName` && "Point Ground Cover" %in% events_check$`EventName` ) {
+
+    missing_data_query <- paste0("SELECT 
+    quote(GC.PK_Protocol) as quoted_PK_Protocol, 
+    GC.EventName AS GC_EventName, 
+    GC.Transect, 
+    GC.sampleCount AS GC_SampleCount,
+    FQ.EventName AS FQ_EventName, 
+    FQ.sampleCount AS FQ_SampleCount,
+    GC.Date AS Protocol_Date,
+    GC.siteID AS Site_ID
+FROM 
+    (SELECT Protocol.PK_Protocol, Protocol.Date, Site.siteID, EventName, Transect, Count(Sample.PK_Sample) as sampleCount 
+     FROM Protocol
+     INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
+     INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
+     INNER JOIN Site ON Site.PK_Site = Event.FK_Site
+     INNER JOIN AncestryCombinedPath ON AncestryCombinedPath.PK_Site = Site.PK_Site
+     INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
+     WHERE EventName = 'Point Ground Cover'
+     GROUP BY Protocol.PK_Protocol, Protocol.Date, Site.siteID, EventName, Transect
+     HAVING sampleCount > 1) AS GC
+LEFT JOIN 
+    (SELECT Protocol.PK_Protocol, EventName, Transect, Count(Sample.PK_Sample) as sampleCount 
+     FROM Protocol
+     INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
+     INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
+     INNER JOIN Site ON Site.PK_Site = Event.FK_Site
+     INNER JOIN AncestryCombinedPath ON AncestryCombinedPath.PK_Site = Site.PK_Site
+     INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
+     WHERE EventName = 'Frequency (by quadrat)'
+     GROUP BY Protocol.PK_Protocol, EventName, Transect
+     HAVING sampleCount > 1) AS FQ
+ON GC.PK_Protocol = FQ.PK_Protocol AND GC.Transect = FQ.Transect
+WHERE FQ.PK_Protocol IS NULL;")
+    
+    possible_missing_data <- dbGetQuery(mydb, missing_data_query)
+    
+    missing_data <- as.data.frame(possible_missing_data)
+    missing_data <- missing_data %>% 
+      select(Transect, Site_ID, Protocol_Date)
+    
+    write.xlsx(missing_data, paste0(app_path, "/www/Conflicts/possible_missing_data.xlsx"))
+  }
+  
+}
+
+
 
 # only create workbook when not in power_mode
 if (power_mode == FALSE) {
@@ -416,6 +475,9 @@ if (power_mode == FALSE) {
   
   addWorksheet(wb, "FreqComparisons")
   writeData(wb, "FreqComparisons", freq_comp_check)
+  
+  addWorksheet(wb, "PossibleMissingData")
+  writeData(wb, "PossibleMissingData", missing_data)
   
   addWorksheet(wb, "SpeciesErrors")
   writeData(wb, "SpeciesErrors", sp_errors)
