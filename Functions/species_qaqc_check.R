@@ -279,122 +279,126 @@ if (power_mode == TRUE) {
 }
 
 
-## special for RR state check...
-if (ServerKey == "USFS R6-RR") {
-  ## set USDA states to compare ->
-  selected_state <- c("California","Oregon","Washington","Idaho","Nevada")
-  state_num <- 1
-  ## temp df to bind to later
-  final_sp_list <- data.frame("code" = "")
-  while (state_num < length(selected_state)+1) {
-    ## goes through each state
-    selected_state_s<- selected_state[state_num]
-    selected_state_file_path<- paste0(app_path,"/www/sp_lists_USDA/",selected_state_s,".csv")
+## only happens if species are inserted...
+if (power_mode == FALSE) {
+  ## special for RR state check...
+  if (ServerKey == "USFS R6-RR") {
+    ## set USDA states to compare ->
+    selected_state <- c("California","Oregon","Washington","Idaho","Nevada")
+    state_num <- 1
+    ## temp df to bind to later
+    final_sp_list <- data.frame("code" = "")
+    while (state_num < length(selected_state)+1) {
+      ## goes through each state
+      selected_state_s<- selected_state[state_num]
+      selected_state_file_path<- paste0(app_path,"/www/sp_lists_USDA/",selected_state_s,".csv")
+      
+      st_plant_data<- read_csv(selected_state_file_path)
+      ## get species code name
+      sp_codes_avaliable_by_state<- as.data.frame(unique(st_plant_data$symbol))
+      names(sp_codes_avaliable_by_state) <- "code"
+      ## get species code synomns to help catch old codes
+      more_sp_codes_avaliable_by_state<- as.data.frame(unique(st_plant_data$synonym_symbol))
+      names(more_sp_codes_avaliable_by_state) <- "code"
+      
+      final_sp_list_temp <- unique(rbind(sp_codes_avaliable_by_state, more_sp_codes_avaliable_by_state)) %>%
+        arrange(code)
+      
+      final_sp_list <- rbind(final_sp_list, final_sp_list_temp)
+      
+      state_num = state_num+1
+    }
     
-    st_plant_data<- read_csv(selected_state_file_path)
-    ## get species code name
-    sp_codes_avaliable_by_state<- as.data.frame(unique(st_plant_data$symbol))
-    names(sp_codes_avaliable_by_state) <- "code"
-    ## get species code synomns to help catch old codes
-    more_sp_codes_avaliable_by_state<- as.data.frame(unique(st_plant_data$synonym_symbol))
-    names(more_sp_codes_avaliable_by_state) <- "code"
+    ## plant list of all codes in selected states from USDA website
+    final_sp_list_temp <- unique(final_sp_list)
     
-    final_sp_list_temp <- unique(rbind(sp_codes_avaliable_by_state, more_sp_codes_avaliable_by_state)) %>%
+    ## merge vgs old codes to state list as well ->
+    names(vgs_species_list_least)[1] <- "code"
+    vgs_temp_w_state_codes <- unique(left_join(final_sp_list, vgs_species_list_least))
+    
+    vgs_temp_old_codes_only <- as.data.frame(vgs_temp_w_state_codes$NewSynonym)
+    names(vgs_temp_old_codes_only)[1] <- "code"
+    
+    final_sp_list <- unique(rbind(final_sp_list, vgs_temp_old_codes_only)) %>% 
+      filter(!is.na(code)) %>% 
       arrange(code)
     
-    final_sp_list <- rbind(final_sp_list, final_sp_list_temp)
-    
-    state_num = state_num+1
-  }
-  
-  ## plant list of all codes in selected states from USDA website
-  final_sp_list_temp <- unique(final_sp_list)
-  
-  ## merge vgs old codes to state list as well ->
-  names(vgs_species_list_least)[1] <- "code"
-  vgs_temp_w_state_codes <- unique(left_join(final_sp_list, vgs_species_list_least))
-  
-  vgs_temp_old_codes_only <- as.data.frame(vgs_temp_w_state_codes$NewSynonym)
-  names(vgs_temp_old_codes_only)[1] <- "code"
-  
-  final_sp_list <- unique(rbind(final_sp_list, vgs_temp_old_codes_only)) %>% 
-    filter(!is.na(code)) %>% 
-    arrange(code)
-  
-  ## Check all species added
-  sp_query <- paste0("SELECT DISTINCT PK_Species, SpeciesName from Protocol
+    ## Check all species added
+    sp_query <- paste0("SELECT DISTINCT PK_Species, SpeciesName from Protocol
   INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
   INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
   INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
   INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
   where List = 'NRCS'")
-  
-  species_in_db <- dbGetQuery(mydb, sp_query)
-  
-  sp_in_data <- as.data.frame(unique(species_in_db$PK_Species))
-  
-  not_in_state <- setdiff(species_in_db$PK_Species,final_sp_list$code)
-  
-  ## get rid of allowed VGS 2 codes
-  updated_not_in <- not_in_state[grep("^2", not_in_state, invert = T)]
-  
-  updated_not_in <- as.data.frame(updated_not_in)
-  names(updated_not_in)[1]<- "PK_Species"
-  
-  ## plants in .db that do not show up in selected state USDA lists
-  updated_not_in_2<- left_join(updated_not_in, vgs_species_list)
-
-  ## add column so can merge and know its not in state lists
-  if (nrow(updated_not_in_2) > 0) {
-    updated_not_in_2[2] <- "Not in USDA list for CA, WA, OR, ID, or NV"
-    names(updated_not_in_2)[2] <- "Species in USDA plant list?"
-  
-  sp_by_state_check_all <- left_join(species_count_w_siteInfo, updated_not_in_2)
-  sp_by_state_check_all$`Species in USDA plant list?`[is.na(sp_by_state_check_all$`Species in USDA plant list?`)] <- "yes"
-  names(sp_by_state_check_all)[8] <- "InUSDA_PlantList?"
-  sp_by_state_check_all <- sp_by_state_check_all %>% 
-    arrange(`InUSDA_PlantList?`)
-  }
-  #View(sp_by_state_check_all)
-  names(sp_by_state_check_all)[2] <- "UpdatedCode"
-  names(sp_by_state_check_all)[6] <- "SampleHits"
-  names(sp_by_state_check_all)[7] <- "SiteHits"
-  
-  # # get siteID for species Not in USDA list
-  # sp_find_siteID <- sp_by_state_check_all %>% 
-  #   filter(`InUSDA_PlantList?` == "Not in USDA list for CA, WA, OR, ID, or NV")
-  #   t=1
-  #   
-  #   temp_sp_find<- sp_by_state_check_all$PK_Species[t]
-  #   temp_qualifier_find<- sp_by_state_check_all$SpeciesQualifier[t]
-  #   # if no qualifier - use IS NULL
-  #   if (is.na(temp_qualifier_find)) {
-  #     find_site_q <- paste0("select DISTINCT SiteID, Protocol.Date, PK_Species, SpeciesQualifier from Protocol
-  # INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
-  # INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
-  # INNER JOIN Site ON Site.PK_Site = Event.FK_Site
-  # INNER JOIN AncestryCombinedPath ON AncestryCombinedPath.PK_Site = Site.PK_Site
-  # INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
-  # INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
-  # where PK_Species = '",temp_sp_find,"' and SpeciesQualifier IS NULL")
-  #   } else { # has a qualifier
-  #     find_site_q <- paste0("select DISTINCT SiteID, Protocol.Date, PK_Species, SpeciesQualifier from Protocol
-  # INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
-  # INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
-  # INNER JOIN Site ON Site.PK_Site = Event.FK_Site
-  # INNER JOIN AncestryCombinedPath ON AncestryCombinedPath.PK_Site = Site.PK_Site
-  # INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
-  # INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
-  # where PK_Species = '",temp_sp_find,"' and SpeciesQualifier = '",temp_qualifier_find,"'")
-  #   }
-  #   
-  #   found_sites<- dbGetQuery(mydb, find_site_q)
-  
-  write.xlsx(sp_by_state_check_all, paste0(app_path, "/www/Conflicts/sp_by_state_check_all.xlsx"))
-  if (power_mode == TRUE) {
-    file.show(paste0(app_path, "/www/Conflicts/sp_by_state_check_all.xlsx"))
+    
+    species_in_db <- dbGetQuery(mydb, sp_query)
+    
+    sp_in_data <- as.data.frame(unique(species_in_db$PK_Species))
+    
+    not_in_state <- setdiff(species_in_db$PK_Species,final_sp_list$code)
+    
+    ## get rid of allowed VGS 2 codes
+    updated_not_in <- not_in_state[grep("^2", not_in_state, invert = T)]
+    
+    updated_not_in <- as.data.frame(updated_not_in)
+    names(updated_not_in)[1]<- "PK_Species"
+    
+    ## plants in .db that do not show up in selected state USDA lists
+    updated_not_in_2<- left_join(updated_not_in, vgs_species_list)
+    
+    ## add column so can merge and know its not in state lists
+    if (nrow(updated_not_in_2) > 0) {
+      updated_not_in_2[2] <- "Not in USDA list for CA, WA, OR, ID, or NV"
+      names(updated_not_in_2)[2] <- "Species in USDA plant list?"
+      
+      sp_by_state_check_all <- left_join(species_count_w_siteInfo, updated_not_in_2)
+      sp_by_state_check_all$`Species in USDA plant list?`[is.na(sp_by_state_check_all$`Species in USDA plant list?`)] <- "yes"
+      names(sp_by_state_check_all)[8] <- "InUSDA_PlantList?"
+      sp_by_state_check_all <- sp_by_state_check_all %>% 
+        arrange(`InUSDA_PlantList?`)
+    }
+    #View(sp_by_state_check_all)
+    names(sp_by_state_check_all)[2] <- "UpdatedCode"
+    names(sp_by_state_check_all)[6] <- "SampleHits"
+    names(sp_by_state_check_all)[7] <- "SiteHits"
+    
+    # # get siteID for species Not in USDA list
+    # sp_find_siteID <- sp_by_state_check_all %>% 
+    #   filter(`InUSDA_PlantList?` == "Not in USDA list for CA, WA, OR, ID, or NV")
+    #   t=1
+    #   
+    #   temp_sp_find<- sp_by_state_check_all$PK_Species[t]
+    #   temp_qualifier_find<- sp_by_state_check_all$SpeciesQualifier[t]
+    #   # if no qualifier - use IS NULL
+    #   if (is.na(temp_qualifier_find)) {
+    #     find_site_q <- paste0("select DISTINCT SiteID, Protocol.Date, PK_Species, SpeciesQualifier from Protocol
+    # INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
+    # INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
+    # INNER JOIN Site ON Site.PK_Site = Event.FK_Site
+    # INNER JOIN AncestryCombinedPath ON AncestryCombinedPath.PK_Site = Site.PK_Site
+    # INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
+    # INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
+    # where PK_Species = '",temp_sp_find,"' and SpeciesQualifier IS NULL")
+    #   } else { # has a qualifier
+    #     find_site_q <- paste0("select DISTINCT SiteID, Protocol.Date, PK_Species, SpeciesQualifier from Protocol
+    # INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
+    # INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
+    # INNER JOIN Site ON Site.PK_Site = Event.FK_Site
+    # INNER JOIN AncestryCombinedPath ON AncestryCombinedPath.PK_Site = Site.PK_Site
+    # INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
+    # INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
+    # where PK_Species = '",temp_sp_find,"' and SpeciesQualifier = '",temp_qualifier_find,"'")
+    #   }
+    #   
+    #   found_sites<- dbGetQuery(mydb, find_site_q)
+    
+    write.xlsx(sp_by_state_check_all, paste0(app_path, "/www/Conflicts/sp_by_state_check_all.xlsx"))
+    if (power_mode == TRUE) {
+      file.show(paste0(app_path, "/www/Conflicts/sp_by_state_check_all.xlsx"))
+    }
   }
 }
+
 
 if (power_mode == FALSE) {
   ## this works for data with EventNames having both frequency and ground cover
