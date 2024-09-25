@@ -224,6 +224,11 @@ batch_import <<- function(historical_raw_data) {
     }
     
     ## variable manipulation ---->
+    ##update to account for QAQC checks for new excel version
+    elevation<<- elevation[elevation!="pass-value numeric or left blank"]
+    slope<<- slope[slope!="pass-value numeric or left blank"]
+    aspect<<- aspect[aspect!="pass-value numeric or left blank"]
+    
     ## making all values NULL if NA
     if (is.na(aspect) || length(aspect) == 0) {
       aspect <- "NULL"
