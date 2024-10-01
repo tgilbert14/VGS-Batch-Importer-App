@@ -356,11 +356,18 @@ if (power_mode == FALSE) {
       names(sp_by_state_check_all)[8] <- "InUSDA_PlantList?"
       sp_by_state_check_all <- sp_by_state_check_all %>% 
         arrange(`InUSDA_PlantList?`)
+      #View(sp_by_state_check_all)
+      names(sp_by_state_check_all)[2] <- "UpdatedCode"
+      names(sp_by_state_check_all)[6] <- "SampleHits"
+      names(sp_by_state_check_all)[7] <- "SiteHits"
+      
+      write.xlsx(sp_by_state_check_all, paste0(app_path, "/www/Conflicts/sp_by_state_check_all.xlsx"))
+      if (power_mode == TRUE) {
+        file.show(paste0(app_path, "/www/Conflicts/sp_by_state_check_all.xlsx"))
+      }
+      
     }
-    #View(sp_by_state_check_all)
-    names(sp_by_state_check_all)[2] <- "UpdatedCode"
-    names(sp_by_state_check_all)[6] <- "SampleHits"
-    names(sp_by_state_check_all)[7] <- "SiteHits"
+
     
     # # get siteID for species Not in USDA list
     # sp_find_siteID <- sp_by_state_check_all %>% 
@@ -392,10 +399,7 @@ if (power_mode == FALSE) {
     #   
     #   found_sites<- dbGetQuery(mydb, find_site_q)
     
-    write.xlsx(sp_by_state_check_all, paste0(app_path, "/www/Conflicts/sp_by_state_check_all.xlsx"))
-    if (power_mode == TRUE) {
-      file.show(paste0(app_path, "/www/Conflicts/sp_by_state_check_all.xlsx"))
-    }
+
   }
 }
 

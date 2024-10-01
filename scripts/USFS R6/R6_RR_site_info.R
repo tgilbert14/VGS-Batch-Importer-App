@@ -23,7 +23,6 @@ site_notes_2 <- historical_raw_data[grep("event note", historical_raw_data[[1]],
 site_notes_2 <- gsub('"', "", site_notes_2, fixed = T)
 site_notes_2 <- gsub("'", "", site_notes_2, fixed = T)
 
-
 ## Formatting notes ---- change depending on batch data
 ## if site_notes_1 present
 if (length(site_notes_1) > 0 && !is.na(site_notes_1)) {

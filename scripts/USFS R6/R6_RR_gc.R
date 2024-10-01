@@ -18,11 +18,37 @@ checked_PK_Event_gc <- Event_guid_info$`quote(PK_Event)`[1]
 ## GC tally data - done on meta-data page
 print(paste0("Parsing Data for GC Tally Data..."))
 
-## saving gc data only with no column titles - RR specific
-gc_data <- data_import[c(4:9), c(4:5)]
-## get rid of NA columns with no species listed
-gc_data <- gc_data %>%
-  filter(!is.na(gc_data[2]))
+## column check to see which method is being used (hits vs %)
+## checking the 'totals' column for each from excel
+hits_used <- data_import[10,5]
+percent_used <- data_import[10,6]
+
+## checking that both hits and gc are not both being used
+if (hits_used > 0 && percent_used > 0) {
+  print("Both GC hits and % both have data.. only use one!")
+  stop("Both GC hits and % both have data.. only use one!")
+}
+
+## sets dataframe depending on which column is being used
+if (hits_used > 0) {
+  ## saving gc data only with no column titles - RR specific
+  gc_data <- data_import[c(4:9), c(4:5)]
+  ## get rid of NA columns with no species listed
+  gc_data <- gc_data[!is.na(gc_data$...5),]
+  ## and zeros
+  gc_data <- gc_data[gc_data$...5 != 0,]
+  gc_data <- as.data.frame(gc_data)
+}
+
+if (percent_used > 0) {
+  ## saving gc data only with no column titles - RR specific
+  gc_data <- data_import[c(4:9), c(4,6)]
+  ## get rid of NA columns with no species listed
+  gc_data <- gc_data[!is.na(gc_data$...6),]
+  ## and zeros
+  gc_data <- gc_data[gc_data$...6 != 0,]
+  gc_data <- as.data.frame(gc_data)
+}
 
 ## if no gc data
 if (nrow(gc_data) == 0) {
@@ -36,19 +62,13 @@ if (nrow(gc_data) == 0) {
   #              Set Notes = 'No Ground Cover data for this event'
   #              Where PK_Protocol=", checked_PK_Event_gc)
   # dbExecute(mydb, update_event_notes)
-  
 }
 
 ## only insert if data present
 if (nrow(gc_data) > 0) {
-  ## save as data frame
-  gc_data <- as.data.frame(gc_data)
-  ## change NA's to 0
-  gc_data[is.na(gc_data)] <- 0
-  ## get rid of rows if have a species but has no hits (sum of zero for freq)
-  temp_gc <- gc_data %>% filter(gc_data$...5 != 0)
-  # View(gc_ready)
-
+  
+  temp_gc <- gc_data
+  
   ## Update categories to PK_Species/Fk_Species/Field Symbol
   temp_gc$...4[temp_gc$...4 == "Litter"] <- "G_LITT"
   temp_gc$...4[temp_gc$...4 == "Rock"] <- "G_ROCK3"
@@ -57,19 +77,17 @@ if (nrow(gc_data) > 0) {
   temp_gc[temp_gc == "Moss"] <- "G_MOSS"
   temp_gc[temp_gc == "Soil"] <- "G_$YKLSYQARFV"
   
-  
   ## checking if whole number or decimal (hits vs % for gc)
   whole_num_check<- unique(as.numeric(temp_gc[,2]) == round(as.numeric(temp_gc[,2]),0))
   whole_num_check_confirm<- unique(grep("FALSE", whole_num_check, value = T))
 
   ## everything in this if is only done if we think the gc is % rather than total count #
-  ## if this is FALSE this means decimals percent, so may be % cover not hits - or if it is exactly 100
-  if ((whole_num_check_confirm == "FALSE" && length(whole_num_check_confirm)!= 0) || sum(as.numeric(temp_gc[,2]))==100) {
+  if (percent_used > 0) {
     print("GC % detected instead of hits")
+    
     ## add decimals up - should be 100% - make col numeric
     col_as_num<- sapply(temp_gc[2], as.numeric)
     sum_per_gc<- colSums(col_as_num)
-    
     ## if not totaled to 100% give message
     if (sum_per_gc != 100) {
       print(paste0(
@@ -102,7 +120,7 @@ if (nrow(gc_data) > 0) {
     }
     
     ## replace with rounded hit numbers per transect
-    temp_gc$...5<- rounded_hits
+    temp_gc$...6<- rounded_hits
   }
   ## end of converting % values to estimated count #'s
   
