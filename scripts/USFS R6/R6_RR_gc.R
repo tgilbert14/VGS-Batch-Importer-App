@@ -78,6 +78,7 @@ if (nrow(gc_data) > 0) {
   temp_gc[temp_gc == "Soil"] <- "G_$YKLSYQARFV"
   
   ## checking if whole number or decimal (hits vs % for gc)
+  ## keep this for freq insert for RR R6!!
   whole_num_check<- unique(as.numeric(temp_gc[,2]) == round(as.numeric(temp_gc[,2]),0))
   whole_num_check_confirm<- unique(grep("FALSE", whole_num_check, value = T))
 

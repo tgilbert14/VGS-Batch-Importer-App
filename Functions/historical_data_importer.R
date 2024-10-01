@@ -271,8 +271,16 @@ batch_import <<- function(historical_raw_data) {
     ## RR key - nested freq - check protocols as well
     if (ServerKey == "USFS R6-RR" &&
         (Protocol == "USFS R6 Rogue River Standard" || Protocol_2 == "USFS R6 Rogue River Standard")) {
+      
       ## inserting freq data
-      base::source("scripts/USFS R6/R6_RR_freq.R")
+      if (grepl("Belt",active_sheets[x], ignore.case = TRUE)) {
+        base::source("scripts/USFS R6/R6_RR_freq.R")
+      }
+      ## looking for specific LI tab
+      if (grepl("LineIntercept",active_sheets[x], ignore.case = TRUE)) {
+        base::source("scripts/USFS R6/R6_RR_lineIntercept.R")
+      }
+      
     }
     
     ## BTNF key
@@ -1762,6 +1770,73 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
   ## If Line Intercept...
   if (method == "LI") {
     # data<- temp_lpi
+    
+  
+    
+    
+    d <- 1
+    while (d < nrow(data) + 1) {
+      
+      ## Surface Cover / 'S' options -> Specific to Protocols
+      ## if species can be a gc or canopy and if before a basal hit - add 'S'
+      
+      ## for USFS R4 BTNF - 'L' and 'WL'
+      if ((ServerKey == "USFS R4-BT") &&
+          (data$Species[d] == "G_$8UEFABAVX9" || data$Species[d] == "G_$R4RTL5LFIN")) {
+        cParameter <- paste0("'Surface'")
+      } else {
+        cParameter <- paste0("NULL")
+      }
+      # View(data)
+      
+      ## add ground cover check?? make sure species in sheet is basal?
+      
+      ## also need to track what is being entered for QA/QC after like Freq...
+      
+      ## each col / sample insert
+      PK_Sample <- GUID()
+      
+      insert_sample <- paste0("INSERT INTO Sample
+           (PK_Sample
+           ,FK_Event
+           ,FK_Species
+           ,Transect
+           ,SampleNumber
+           ,Element
+           ,SubElement
+           ,FieldSymbol
+           ,SpeciesQualifier
+           ,FieldQualifier
+           ,cParameter
+           ,cParameter2
+           ,cParameter3
+           ,nValue
+           ,nValue2
+           ,nValue3
+           ,cValue
+           ,cValue2
+           ,cValue3
+           ,SyncKey
+           ,SyncState)
+     VALUES
+           (", PK_Sample, ",", FK_Event, ",'", data$Species[d], "',", data$Transect[d], ",", data$Sample[d], ",1,", data$SubElement[d], ",'", data$Species[d], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
+      
+      ## only insert if not in power mode
+      if (power_mode == "FALSE") {
+        
+        ## for troubleshootin
+        #print(paste("Inserting NF code",toupper(data[d, ][[1]]),"on Transect",Transect,"- Sample",s,"- Element",Element,"-",SubElement))
+        
+        ## insert LPI data
+        dbExecute(mydb, insert_sample)
+      }
+      
+      ## move to next row/species
+      d <- d + 1
+    }
+    
+    
+    
     
     ## get Transect, Sample, Species, Element, nValue, nValue2, nValue3
     
