@@ -19,12 +19,22 @@ checked_PK_Event_gc <- Event_guid_info$`quote(PK_Event)`[1]
 print(paste0("Parsing Data for GC Tally Data..."))
 
 ## column check to see which method is being used (hits vs %)
-## checking the 'totals' column for each from excel
-hits_used <- data_import[10,5]
-percent_used <- data_import[10,6]
+## checking the 'totals' column for each from excel - this was created for
+## new style of sheet updated Oct 2024
+
+## check if old sheet or new sheet
+## new sheets have 6 columns (old have 5)
+if (ncol(data_import) >= 6) {
+  hits_used <- data_import[10,5]
+  percent_used <- data_import[10,6]
+} else {
+  ## assuming its hits if using old sheet - add hits up
+  hits_used <- sum(as.numeric(unlist(data_import[c(4:9),5])))
+  percent_used <- 0
+}
 
 ## checking that both hits and gc are not both being used
-if (hits_used > 0 && percent_used > 0) {
+if ((hits_used > 0 && percent_used > 0)) {
   print("Both GC hits and % both have data.. only use one!")
   stop("Both GC hits and % both have data.. only use one!")
 }
@@ -56,12 +66,26 @@ if (nrow(gc_data) == 0) {
   temp_gc <- data.frame(0, 0)
   print(paste0("No GC data for file ", batch_file))
   
-  ## this does not work - direct user to enter no gc data in the notes
-  ## update event notes to remark no gc data for this event
-  # update_event_notes <- paste0("Update Protocol
-  #              Set Notes = 'No Ground Cover data for this event'
-  #              Where PK_Protocol=", checked_PK_Event_gc)
-  # dbExecute(mydb, update_event_notes)
+  ## update event notes to remark no gc data for this event ->
+  ## first get notes and add to them...
+  get_event_notes <- paste0("Select Notes from Protocol
+               Where PK_Protocol=", checked_PK_Event_gc)
+  temp.e.notes<- dbGetQuery(mydb, get_event_notes)
+  # if has data, update notes, else, just insert
+  if (nrow(temp.e.notes)>0) {
+    ## update notes
+    new.e.notes<- paste0(temp.e.notes," - No Ground Cover data for this event.")
+    ## update insert statement
+    update_event_notes <- paste0("Update Protocol
+               Set Notes = '",new.e.notes,"'
+               Where PK_Protocol=", checked_PK_Event_gc)
+  } else {
+    ## create insert statement
+    update_event_notes <- paste0("Update Protocol
+               Set Notes = 'No Ground Cover data for this event.'
+               Where PK_Protocol=", checked_PK_Event_gc)
+  }
+  dbExecute(mydb, update_event_notes)
 }
 
 ## only insert if data present
