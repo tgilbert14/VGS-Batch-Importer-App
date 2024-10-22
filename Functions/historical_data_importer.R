@@ -36,7 +36,7 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
   
   ## choosing files to import - built to handle multiple
   data_file <<- choose.files(
-    default = "locate excel file(s)",
+    default = "pick excel file(s)",
     multi = T, caption = "Select Historical Batch Data Files(s) to Import"
   )
   
@@ -151,6 +151,42 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
     }
     
     print("next batch file...")
+    ## clearing variables so not reused...
+    suppressWarnings(rm(hi))
+    suppressWarnings(rm(hi2))
+    suppressWarnings(rm(whole_num_check))
+    suppressWarnings(rm(whole_num_check_confirm))
+    suppressWarnings(rm(tot_num_belts))
+    suppressWarnings(rm(sum_per_gc))
+    suppressWarnings(rm(Sum_of_nesteds))
+    suppressWarnings(rm(trim_sheet_name))
+    suppressWarnings(rm(site_name))
+    suppressWarnings(rm(belt_num))
+    suppressWarnings(rm(belt_numbers))
+    suppressWarnings(rm(belts))
+    suppressWarnings(rm(checked_PK_Event_gc))
+    suppressWarnings(rm(checked_PK_Event_nf))
+    suppressWarnings(rm(col_as_num))
+    suppressWarnings(rm(cols.num))
+    suppressWarnings(rm(Element_raw))
+    suppressWarnings(rm(elevation))
+    suppressWarnings(rm(event_date))
+    suppressWarnings(rm(find_event_guid))
+    suppressWarnings(rm(first_belt))
+    suppressWarnings(rm(first_SampleNumber_raw))
+    suppressWarnings(rm(insert_site))
+    suppressWarnings(rm(is_whole_number))
+    suppressWarnings(rm(lat))
+    suppressWarnings(rm(long))
+    suppressWarnings(rm(new))
+    suppressWarnings(rm(rounded_hits))
+    suppressWarnings(rm(SampleNumber_raw))
+    suppressWarnings(rm(site_notes))
+    suppressWarnings(rm(site_notes_1))
+    suppressWarnings(rm(site_notes_2))
+    suppressWarnings(rm(site_PK))
+    suppressWarnings(rm(slope))
+    
     ## saving completed files for output
     #output_list[batch_file, 1] <<- batch_file
     #output_list[batch_file, 2] <<- data_file[[batch_file]]
