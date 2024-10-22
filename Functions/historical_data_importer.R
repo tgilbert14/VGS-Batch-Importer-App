@@ -36,7 +36,7 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
   
   ## choosing files to import - built to handle multiple
   data_file <<- choose.files(
-    default = "excel file(s)",
+    default = "locate excel file(s)",
     multi = T, caption = "Select Historical Batch Data Files(s) to Import"
   )
   
@@ -1421,7 +1421,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
            ,SyncKey
            ,SyncState)
      VALUES
-           (", PK_Sample, ",", FK_Event, ",'", toupper(data[d, ][[1]]), "',", Transect, ",", s, ",", Element, ",", SubElement, ",'", toupper(data[d, ][[1]]), "',", data[d, ][2], ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
+           (", PK_Sample, ",", FK_Event, ",'", toupper(data[d, ][[1]]), "',", Transect, ",", s, ",", Element, ",", SubElement, ",'", toupper(data[d, ][[1]]), "',", data[d, ][2], ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue3, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
         
         if (!is.na(sample_data[d, s])) {
           
@@ -1479,7 +1479,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
     #        ,SyncKey
     #        ,SyncState)
     #  VALUES
-    #        (", PK_Sample, ",", FK_Event, ",'SYS_NONE',", Transect, ",", s, ",1,", SubElement, ",'SYS_NONE',NULL,", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
+    #        (", PK_Sample, ",", FK_Event, ",'SYS_NONE',", Transect, ",", s, ",1,", SubElement, ",'SYS_NONE',NULL,", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue3, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
     #     
     #     ## only insert if not in power mode
     #     if (power_mode == "FALSE") {
@@ -1534,7 +1534,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
            ,SyncKey
            ,SyncState)
      VALUES
-           (", PK_Sample, ",", FK_Event, ",'", data[d, ][[1]], "',", Transect, ",", SampleNumber, ",", Element, ",", SubElement, ",'", data[d, ][[1]], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",", nValue, ",", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
+           (", PK_Sample, ",", FK_Event, ",'", data[d, ][[1]], "',", Transect, ",", SampleNumber, ",", Element, ",", SubElement, ",'", data[d, ][[1]], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",", nValue, ",", nValue2, ",", nValue3, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
       
       ## does not insert if POWER MODE
       if (power_mode == "FALSE") {
@@ -1601,7 +1601,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
            ,SyncKey
            ,SyncState)
      VALUES
-           (", PK_Sample, ",", FK_Event, ",'", gc_random[d], "',", Transect[d], ",", SampleNumber[d], ",", Element[d], ",", SubElement, ",'", gc_random[d], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
+           (", PK_Sample, ",", FK_Event, ",'", gc_random[d], "',", Transect[d], ",", SampleNumber[d], ",", Element[d], ",", SubElement, ",'", gc_random[d], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue3, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
       
       ## does not insert if POWER MODE
       ## had to add to create report otherwise app crashes
@@ -1747,7 +1747,7 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
            ,SyncKey
            ,SyncState)
      VALUES
-           (", PK_Sample, ",", FK_Event, ",'", data$Species[d], "',", data$Transect[d], ",", data$Sample[d], ",1,", data$SubElement[d], ",'", data$Species[d], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
+           (", PK_Sample, ",", FK_Event, ",'", data$Species[d], "',", data$Transect[d], ",", data$Sample[d], ",1,", data$SubElement[d], ",'", data$Species[d], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue3, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
       
       ## only insert if not in power mode
       if (power_mode == "FALSE") {
@@ -1771,30 +1771,105 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
   if (method == "LI") {
     # data<- temp_lpi
     
-  
+    ## need to find FK_event for height just in case you need ->
+    ## this is for R6! Need to adjust for each protocol...
+    if (ServerKey == "USFS R6-RR") {
+      
+      term <- "Standard"
+      eventName <- "Height (feet)"
+      
+      find_event_guid <- paste0("Select DISTINCT quote(PK_Event), ProtocolName from Protocol
+INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
+INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
+INNER JOIN Site ON Site.PK_Site = Event.FK_Site
+where ProtocolName LIKE '%",term,"%' AND Protocol.Date = '",event_date, "'
+AND SiteID = '", site_name, "'", " AND
+EventName = '",eventName,"'")
+      
+      Event_guid_info <- DBI::dbGetQuery(mydb, find_event_guid)
+      FK_Event_height <- Event_guid_info$`quote(PK_Event)`[1]
+    }
     
+    ## checking columns have correct names - if not, correct
+    if (names(data)[1] != "Belt" && data[1,1] == "Belt") {
+      ## making 1st row (labels) the col headers
+      colnames(data) <- data[1, ]
+      data <- data[-1, ]
+    }
+    
+    ## update all NA's to NULLs fgor SQL insert
+    data <- data %>%
+      mutate_all(~ replace(., is.na(.), "NULL"))
     
     d <- 1
     while (d < nrow(data) + 1) {
       
-      ## Surface Cover / 'S' options -> Specific to Protocols
-      ## if species can be a gc or canopy and if before a basal hit - add 'S'
+      ## Error Checking ----
+      ## message for data log for species in VGS check
+      if (length(grep(paste0("^", toupper(data[d, ][[2]]), "$"), vgs_species_list$PK_Species, value = T)) == 0) print(paste0("Species: ", toupper(data[d, ][[2]]), " not in VGS db for NF belt#", Transect, " - ", file_on))
+      ## message for data log for species qualifier length
+      if (nchar(data[d, ][3]) > 20) print(paste0("Species: ", toupper(data[d, ][[3]]), " Qualifier is too long (Max 20 char) for belt#", Transect, " - ", file_on))
       
-      ## for USFS R4 BTNF - 'L' and 'WL'
-      if ((ServerKey == "USFS R4-BT") &&
-          (data$Species[d] == "G_$8UEFABAVX9" || data$Species[d] == "G_$R4RTL5LFIN")) {
-        cParameter <- paste0("'Surface'")
-      } else {
-        cParameter <- paste0("NULL")
+      ## stop app if not in Power Mode ->
+      if (power_mode == FALSE) {
+        ## alerts for app stoppages
+        ## Species not in VGS .db species list = stop()
+        if (length(grep(paste0("^", toupper(data[d, ][[2]]), "$"), vgs_species_list$PK_Species, value = T)) == 0) {
+          ## message for data log for species in VGS check
+          print(paste0("Species: ", toupper(data[d, ][[2]]), " not in VGS db for belt#", Transect, " - ", file_on))
+          ## alert for species
+          shinyalert("Species Not in VGS!", paste0(
+            "Species: ", toupper(data[d, ][[2]]),
+            " not in VGS db for belt#", Transect, " - ", file_on
+          ),
+          type = "error", immediate = T
+          )
+          Sys.sleep(15)
+        }
+        
+        ## species check
+        if (length(grep(paste0("^", toupper(data[d, ][[2]]), "$"), vgs_species_list$PK_Species, value = T)) == 0) stop(paste0("Species: ", toupper(data[d, ][[2]]), " not in VGS db for NF belt#", Transect, " - ", file_on))
+        ## Check length of species qualifier = stop() if over 20 char
+        ## print message for qualifier error
+        if (nchar(data[d, ][3]) > 20) print(paste0("Species: ", toupper(data[d, ][[3]]), " Qualifier is too long (Max 20 char) for belt#", Transect, " - ", file_on))
+        ## pop up warning
+        if (nchar(data[d, ][3]) > 20) {
+          shinyalert("Species Qualifier too long!", paste0(
+            "Species: ", toupper(data[d, ][[2]]),
+            " Qualifier is too long (>20) for belt#",
+            Transect, " - ", file_on
+          ),
+          type = "error",
+          immediate = T
+          )
+          Sys.sleep(20)
+        }
+        ## stop app
+        if (nchar(data[d, ][3]) > 20) stop(paste0("Species: ", toupper(data[d, ][[3]]), " Qualifier is too long (Max 20 char) for belt#", Transect, " - ", file_on))
+      } ## end of if in power mode
+      ## End of Error checking ----
+      
+      ## for each species - format if Species Qualifier is not null
+      if (data[d, ][3] != "NULL") {
+        ## get rid of problematic symbols
+        data[d, ][3] <- gsub('"', "", data[d, ][3], fixed = T)
+        data[d, ][3] <- gsub("'", "", data[d, ][3], fixed = T)
+        ## add quotes
+        data[d, ][3] <- paste0("'", data[d, ][3], "'")
       }
-      # View(data)
-      
-      ## add ground cover check?? make sure species in sheet is basal?
-      
-      ## also need to track what is being entered for QA/QC after like Freq...
       
       ## each col / sample insert
       PK_Sample <- GUID()
+  
+      ## element is incremental, so using 'd' in loop but adding leading zeros
+      ## only supports 3 digits of entries
+      if (nchar(d)==1) {
+        li.element <- paste0("00000",d)
+      } else if (nchar(d)==2) {
+        li.element <- paste0("0000",d)
+      } else if (nchar(d)==3) {
+        li.element <- paste0("000",d)
+      }
       
       insert_sample <- paste0("INSERT INTO Sample
            (PK_Sample
@@ -1819,28 +1894,62 @@ insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", 
            ,SyncKey
            ,SyncState)
      VALUES
-           (", PK_Sample, ",", FK_Event, ",'", data$Species[d], "',", data$Transect[d], ",", data$Sample[d], ",1,", data$SubElement[d], ",'", data$Species[d], "',", SpeciesQualifier, ",", FieldQualifier, ",", cParameter, ",", cParameter2, ",", cParameter3, ",1,", nValue2, ",", nValue2, ",", cValue, ",", cValue2, ",", cValue3, ",", SyncKey, ",", SyncState, ")")
-      
+           (", PK_Sample, ",", FK_Event, ",'", toupper(data$Code[d]), "',", trimws(data$Belt[d]), ",1,'", li.element, "',NULL,'", toupper(data$Code[d]), "',", trimws(data$Qualifier[d]), ",", FieldQualifier, "," ,cParameter, ",", cParameter2, "," ,cParameter3, "," ,trimws(round(as.numeric(data$Start[d]),2)), "," ,trimws(round(as.numeric(data$Stop[d]),2)), "," ,trimws(round(as.numeric(data$Gap[d]),2)), "," ,cValue, "," ,cValue2, "," ,cValue3, "," ,SyncKey, "," ,SyncState, ")")
+
       ## only insert if not in power mode
       if (power_mode == "FALSE") {
         
         ## for troubleshootin
-        #print(paste("Inserting NF code",toupper(data[d, ][[1]]),"on Transect",Transect,"- Sample",s,"- Element",Element,"-",SubElement))
+        #print(paste("Inserting NF code",toupper(data[d, ][[2]]),"on Transect",Transect,"- Sample",s,"- Element",Element,"-",SubElement))
         
-        ## insert LPI data
+        ## insert LI data
         dbExecute(mydb, insert_sample)
-      }
+        
+        ## if height present, need another insert statement ->
+        if (data$Height[d]>0 && data$Height[d] != "NULL") {
+          #print(paste0("Height found for LI, Species: ",toupper(data$Code[d])))
+          
+          ## each col / sample insert
+          PK_Sample.h <- GUID()
+
+          insert_sample.h <- paste0("INSERT INTO Sample
+           (PK_Sample
+           ,FK_Event
+           ,FK_Species
+           ,Transect
+           ,SampleNumber
+           ,Element
+           ,SubElement
+           ,FieldSymbol
+           ,SpeciesQualifier
+           ,FieldQualifier
+           ,cParameter
+           ,cParameter2
+           ,cParameter3
+           ,nValue
+           ,nValue2
+           ,nValue3
+           ,cValue
+           ,cValue2
+           ,cValue3
+           ,SyncKey
+           ,SyncState)
+     VALUES
+           (", PK_Sample.h, ",", FK_Event_height, ",'", toupper(data$Code[d]), "',", trimws(data$Belt[d]), ",1,'", li.element, "',NULL,'", toupper(data$Code[d]), "',", trimws(data$Qualifier[d]), ",", FieldQualifier, "," ,cParameter, ",", cParameter2, "," ,cParameter3, "," ,trimws(round(as.numeric(data$Height[d]),2)), "," ,nValue2, "," ,nValue3, "," ,cValue, "," ,cValue2, "," ,cValue3, "," ,SyncKey, "," ,SyncState, ")")
+
+          ## insert LI-height data
+          dbExecute(mydb, insert_sample.h)
+        }
+        
+      } ## end of power mode for inserts
       
       ## move to next row/species
       d <- d + 1
     }
     
-    
-    
-    
     ## get Transect, Sample, Species, Element, nValue, nValue2, nValue3
     
-    print("LI data inserted... maybe...")
+    print("LI data inserted... ")
   }
   
   ## If clipping Production...

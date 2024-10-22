@@ -5,7 +5,7 @@
 
 ## After all fixes have taken place -> Run in 'power_mode=FALSE' which has various
 ## QA/QC checks. Must run through all batch data at once with no errors to work.
-
+options("rgdal_show_exportToProj4_warnings"="none")
 
 ## set environment path
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -27,10 +27,8 @@ library(DBI)
 library(RSQLite)
 library(stringr)
 library(sf)
-options("rgdal_show_exportToProj4_warnings"="none")
 library(sp)
 library(rgdal)
-# library(rChoiceDialogs)
 
 ## SQL local Connection info from R to local VGS5 (VGS50.db)
 db_loc <<- "C:/ProgramData/VGSData/VGS50.db"
@@ -133,8 +131,8 @@ ui <- fluidPage(
           ),
           #"Status...",
           withSpinner(tableOutput("status"))
-        ) ## end of tab panal - status
-      ) ## end of tab set panal(s)
+        ) ## end of tab panel - status
+      ) ## end of tab set panel(s)
     ) ## end of box display
 
   ), ## end of sidebar layout
