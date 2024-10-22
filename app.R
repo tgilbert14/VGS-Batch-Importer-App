@@ -141,10 +141,10 @@ ui <- fluidPage(
                       label = "Count", width = 80),
   ## check species against USDA plant database for that state
   shiny::actionButton(icon = icon("wand-magic-sparkles"), inputId = "usda_check",
-                      label = "Species Check", width = 140),
-  ## update syncKey for loctor data after download syncable folders...
-  shiny::actionButton(icon = icon("skull"), inputId = "synckey.update",
-                      label = "Update Locator SyncKey", width = 200)
+                      label = "Species Check", width = 140)#,
+  # ## update syncKey for loctor data after download syncable folders...
+  # shiny::actionButton(icon = icon("comment-dots"), inputId = "notes.update",
+  #                     label = "Update Site Notes", width = 165)
   
 ) ## end of UI
 ## -----------------------------------------------------------------------------
@@ -160,6 +160,7 @@ server <- function(input, output, session) {
     shinyalert("App Workflow", "**Run app and select batch import excel files**
     >Use 'Power Mode' to check for errors<
     >Update SpeciesReplace.xlsx with corrected species codes<
+    >Fix any other QAQC issues<
     >Re-run app in normal mode with Species Replace on<
     >Clean up folder and merge repeated sites<
     >Download Folder Structure from server and place sites in correct folder<
@@ -240,6 +241,12 @@ server <- function(input, output, session) {
     source(paste0(app_path, "/Functions/attribute_update.R"), local = T)
     Sys.sleep(1)
     shinyalert("Done!", "Attributes Updated for Protocols", type = "success", immediate = T)
+    
+    ## concatenating siteID in front of site notes
+    shinyalert("Updating...", "site notes", type = "info", immediate = T)
+    source(paste0(app_path, "/Functions/notes_update.R"), local = T)
+    Sys.sleep(1)
+    shinyalert("Done!", "Site Notes updated with site name", type = "success", immediate = T)
     
     ## pop up for species errors in VGS
     shinyalert("Creating...", "QAQC workbook for data checks", type = "info", immediate = T)
@@ -323,15 +330,7 @@ server <- function(input, output, session) {
     
     plant_files<- list.files("www/sp_lists_USDA/")
     state_names<- substr(plant_files, 0 , nchar(plant_files)-4)
-    
-    # shinyalert("Select a state",
-    #            imageUrl = "images/cowboy2.png", size = "m", imageWidth = 500,
-    #            imageHeight = 300, html = TRUE,
-    #            text = tagList(selectInput(inputId = "st_pick",
-    #                                       label = "This will compare species by state (USDA)",
-    #                                       choices = c("",unlist(state_names)), selected = F, multiple = T)),
-    #            confirmButtonText = "ok", confirmButtonCol = "#70FF19")
-    
+
     # Show a modal when the button is clicked
     showModal(modalDialog(
       title = "Select a state",
@@ -373,10 +372,7 @@ server <- function(input, output, session) {
           
           final_sp_list <- unique(rbind(sp_codes_avaliable_by_state, more_sp_codes_avaliable_by_state)) %>%
             arrange(code)
-          
-          ## merge w/ vgs list ?
-
-          
+      
         } else { ## if more than 1 state selected
           state_num <- 1
           ## temp df to bind to later
@@ -428,25 +424,7 @@ server <- function(input, output, session) {
         names(updated_not_in)[1]<- "PK_Species"
         
         updated_not_in_2<- left_join(updated_not_in, vgs_species_list)
-        
-        ## if species name is one name -> genus only (Aster)
-        ## then check if there are species that start with it 'Aster sp...'
-        
-        # ## joining to VGS names for codes to see if species match (ASTER)
-        # names(sp_codes_avaliable_by_state)[1]<- "PK_Species"
-        # spe<- left_join(sp_codes_avaliable_by_state, vgs_species_list)
-        # View(spe)
-        # ## compare species names
-        # setdiff(updated_not_in_2$SpeciesName, spe$SpeciesName)
-        # spe$SpeciesName
-        
-        
-        
-        ## check genus in db vs if genus is in state
-        
-        ## ----
-        
-        
+
         names(updated_not_in_2)[1]<- paste0("Species not in USDA plant list for selected States")
         write.xlsx(updated_not_in_2, paste0(app_path, "/www/Conflicts/not_in_state.xlsx"))
         file.show(paste0(app_path, "/www/Conflicts/not_in_state.xlsx"))
@@ -459,12 +437,12 @@ server <- function(input, output, session) {
   }) ## end of click species check button
   
   ## Locator update click
-  observeEvent(input$synckey.update, {
+  observeEvent(input$notes.update, {
     ## update locator sync states so they show up - make 1 higher than site SyncState
-    shinyalert("Updating...", "Locator SyncKey Updating to Site.Synckey+1", type = "info", immediate = T)
-    source(paste0(app_path, "/Functions/locatorSyncState_update.R"), local = T)
+    shinyalert("Updating...", "SiteID being added to Site Notes section", type = "info", immediate = T)
+    source(paste0(app_path, "/Functions/notes_update.R"), local = T)
     Sys.sleep(2)
-    shinyalert("Done!", "Locator SyncKey Updating Complete", type = "success", immediate = T)
+    shinyalert("Done!", "Site Notes Updating Complete", type = "success", immediate = T)
   })
   ## End of Locator update button click
   
