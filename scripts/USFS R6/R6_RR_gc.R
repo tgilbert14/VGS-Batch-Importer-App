@@ -25,6 +25,10 @@ print(paste0("Parsing Data for GC Tally Data..."))
 ## check if old sheet or new sheet
 ## new sheets have 6 columns (old have 5)
 if (ncol(data_import) >= 6) {
+  ## make sure numeric for new sheet
+  data_import$...5 <- as.numeric(data_import$...5)
+  data_import$...6 <- as.numeric(data_import$...6)
+  
   hits_used <- data_import[10,5]
   percent_used <- data_import[10,6]
 } else {
@@ -112,7 +116,13 @@ if (nrow(gc_data) > 0) {
     
     ## add decimals up - should be 100% - make col numeric
     col_as_num<- sapply(temp_gc[2], as.numeric)
-    sum_per_gc<- colSums(col_as_num)
+    ## added in case there is only 1 ground cover item being used
+    if (length(col_as_num)>1) {
+      sum_per_gc<- colSums(col_as_num)
+    } else {
+      sum_per_gc<- col_as_num[[1]]
+    }
+    
     ## if not totaled to 100% give message
     if (sum_per_gc != 100) {
       print(paste0(
@@ -155,6 +165,11 @@ if (nrow(gc_data) > 0) {
   hi<- rep(temp_gc[w,1], temp_gc[w,2])
   
   while (w < nrow(temp_gc)+1) {
+    ## if only 1 row of ground cover
+    if (w == 1) {
+      ## all entries will be present so no appending
+      hi2<- hi
+    }
     ## append for second time around
     if (w == 2) {
       hi2<- rep(temp_gc[w,1], temp_gc[w,2])
