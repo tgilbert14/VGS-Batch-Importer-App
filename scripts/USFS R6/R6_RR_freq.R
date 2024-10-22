@@ -132,6 +132,9 @@ EventName = 'Frequency (by quadrat)'")
     ## added the OR sum is equal to 80 because % entries will be converted to 80 gc hits
     if ((whole_num_check_confirm == "FALSE" && length(whole_num_check_confirm)!= 0) || sum(as.numeric(temp_gc[,2]))==80) {
       if (belt_num != 1) {
+        
+        print(paste0(length(hi2)," more ground cover points found - ",site_name))
+        
         ## insert gc data for other belts when present with updated belt num
         belt_numbers<- rep(belt_num,80)
         insert_data(data = hi2, method = "GC", Transect = belt_numbers, 
