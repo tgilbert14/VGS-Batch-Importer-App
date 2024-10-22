@@ -89,14 +89,15 @@ if (power_mode == TRUE) {
 }
 
 ## Check all species added BY SITE
-sp_count_site <- paste0("SELECT DISTINCT SiteID, Protocol.Date, PK_Species, Species.NewSynonym as 'Updated Code', SpeciesName, CommonName, SpeciesQualifier, Count(PK_Species)  from Protocol
+sp_count_site <- paste0("SELECT DISTINCT SiteID, Ancestry, PK_Species, Species.NewSynonym as 'Updated Code', SpeciesName, CommonName, SpeciesQualifier, Count(PK_Species)  from Protocol
   INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
   INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
   INNER JOIN Site ON Site.PK_Site = Event.FK_Site
+  INNER JOIN AncestryCombinedPath ON AncestryCombinedPath.PK_Site = Site.PK_Site
   INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
   INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
   where List = 'NRCS' and eventName LIKE '%Frequency%'
-  group by SiteID, Protocol.Date, PK_Species, SpeciesName, CommonName, SpeciesQualifier")
+  group by SiteID, Ancestry, PK_Species, SpeciesName, CommonName, SpeciesQualifier")
 
 species_count_by_site <- dbGetQuery(mydb, sp_count_site)
 
