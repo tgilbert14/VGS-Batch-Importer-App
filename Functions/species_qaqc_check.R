@@ -90,15 +90,14 @@ if (power_mode == TRUE) {
 }
 
 ## Check all species added BY SITE
-sp_count_site <- paste0("SELECT DISTINCT SiteID, Protocol.Date, Ancestry, PK_Species, Species.NewSynonym as 'Updated Code', SpeciesName, CommonName, SpeciesQualifier, Count(PK_Species)  from Protocol
+sp_count_site <- paste0("SELECT DISTINCT SiteID, Protocol.Date, PK_Species, Species.NewSynonym as 'Updated Code', SpeciesName, CommonName, SpeciesQualifier, Count(PK_Species)  from Protocol
   INNER JOIN EventGroup ON EventGroup.FK_Protocol = Protocol.PK_Protocol
   INNER JOIN Event ON Event.FK_EventGroup = EventGroup.PK_EventGroup
   INNER JOIN Site ON Site.PK_Site = Event.FK_Site
-  INNER JOIN AncestryCombinedPath ON AncestryCombinedPath.PK_Site = Site.PK_Site
   INNER JOIN Sample ON Sample.FK_Event = Event.PK_Event
   INNER JOIN Species ON Species.PK_Species = Sample.FK_Species
   where List = 'NRCS' and eventName LIKE '%Frequency%'
-  group by SiteID, Protocol.Date, Ancestry, PK_Species, SpeciesName, CommonName, SpeciesQualifier")
+  group by SiteID, Protocol.Date, PK_Species, SpeciesName, CommonName, SpeciesQualifier")
 
 species_count_by_site <- dbGetQuery(mydb, sp_count_site)
 
@@ -108,6 +107,7 @@ write.xlsx(species_count_by_site, paste0(app_path, "/www/Conflicts/species_count
 ## generating codes that need to be updated
 ## Create "www/SpeciesReplace.xlsx" file with error species
 if (nrow(sp_errors) > 1) {
+  
   r=1
   sp_codes_2_update<- list()
   
@@ -262,15 +262,16 @@ sp_qc_data <- read.xlsx(paste0(app_path,"/www/Conflicts/species_count_by_site.xl
 possible_duplicated_species <- sp_qc_data %>% 
   group_by(SiteID) %>%
   filter(duplicated(PK_Species))
-
+#View(possible_duplicated_species)
 possible_duplicated_species <- possible_duplicated_species %>% 
   select(!`Count(PK_Species)`)
-
+#View(possible_duplicated_species)
 message_for_sheet <- data.frame(SiteID = "Go through data sheet and update species/qualifiers...",
-                                Date = "----->",Ancestry = "",PK_Species = "Codes seen multiple times for this SiteID/Date combo...",Updated.Code = "----->",
+                                Date = "----->",PK_Species = "Codes seen multiple times for this SiteID/Date combo...",Updated.Code = "----->",
                                 SpeciesName = "----->",CommonName = "",SpeciesQualifier = "----->")
 
 freq_comp_check <- rbind(message_for_sheet, possible_duplicated_species)
+#View(freq_comp_check)
 
 ## run comparison report and try to fix species for these
 write.xlsx(freq_comp_check, paste0(app_path, "/www/Conflicts/possible_duplicated_species.xlsx"))
