@@ -5,6 +5,7 @@
 www/r_output.txt
 www/SpeciesAddedByFile
 www/Conflicts
-www/SpeciesReplaceBackups
+www/SiteClassNameChecks
 www/databases
 www/sp_lists_USDA
+www/data_*
