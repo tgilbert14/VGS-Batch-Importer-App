@@ -486,16 +486,27 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
                           !grepl(paste0(pasture, " was found in the last column, there is nothing to the right of it!"), pasture) &&
                           !grepl(paste0(pasture, " was found in the last column, there is nothing to the left of it!"), pasture))
   
-  ## formatting names/labels
+  ## formatting names/labels with more info
+  ## then if user added already get rid of it and trim white space
   pasture <- paste0(pasture, " Pasture")
-  allotment <- paste0(allotment, " Allotment")
-  ranger_district <- paste0(ranger_district, " Ranger District")
-  forest <- paste0(forest, " National Forest")
-  
   pasture <- str_to_title(pasture)
+  pasture <- gsub("(Pasture).*\\1", "\\1", pasture)
+  pasture <- trimws(pasture)
+  
+  allotment <- paste0(allotment, " Allotment")
   allotment <- str_to_title(allotment)
+  allotment <- gsub("(Allotment).*\\1", "\\1", allotment)
+  allotment <- trimws(allotment)
+  
+  ranger_district <- paste0(ranger_district, " Ranger District")
   ranger_district <- str_to_title(ranger_district)
+  ranger_district <- gsub("(Ranger District).*\\1", "\\1", ranger_district)
+  ranger_district <- trimws(ranger_district)
+  
+  forest <- paste0(forest, " National Forest")
   forest <- str_to_title(forest)
+  forest <- gsub("(National Forest).*\\1", "\\1", forest)
+  forest <- trimws(forest)
   
   ## get rid of problematic characters for SQL
   pasture <- gsub("'", "", pasture, fixed = T)

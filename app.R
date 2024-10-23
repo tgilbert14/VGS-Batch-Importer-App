@@ -243,10 +243,10 @@ server <- function(input, output, session) {
     shinyalert("Done!", "Attributes Updated for Protocols", type = "success", immediate = T)
     
     ## concatenating siteID in front of site notes
-    shinyalert("Updating...", "site notes", type = "info", immediate = T)
+    shinyalert("Updating...", "Concatenating Site Notes and merging sites...", type = "info", immediate = T)
     source(paste0(app_path, "/Functions/notes_update.R"), local = T)
     Sys.sleep(1)
-    shinyalert("Done!", "Site Notes updated with site name", type = "success", immediate = T)
+    shinyalert("Done!", "Sites Merged", type = "success", immediate = T)
     
     ## pop up for species errors in VGS
     shinyalert("Creating...", "QAQC workbook for data checks", type = "info", immediate = T)
@@ -439,7 +439,7 @@ server <- function(input, output, session) {
   ## Locator update click
   observeEvent(input$notes.update, {
     ## update locator sync states so they show up - make 1 higher than site SyncState
-    shinyalert("Updating...", "SiteID being added to Site Notes section", type = "info", immediate = T)
+    shinyalert("Updating...", "Cleaning up sites", type = "info", immediate = T)
     source(paste0(app_path, "/Functions/notes_update.R"), local = T)
     Sys.sleep(2)
     shinyalert("Done!", "Site Notes Updating Complete", type = "success", immediate = T)
