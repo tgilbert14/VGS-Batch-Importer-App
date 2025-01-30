@@ -141,10 +141,10 @@ ui <- fluidPage(
                       label = "Count", width = 80),
   ## check species against USDA plant database for that state
   shiny::actionButton(icon = icon("wand-magic-sparkles"), inputId = "usda_check",
-                      label = "Species Check", width = 140)#,
-  # ## update syncKey for loctor data after download syncable folders...
-  # shiny::actionButton(icon = icon("comment-dots"), inputId = "notes.update",
-  #                     label = "Update Site Notes", width = 165)
+                      label = "Species Check", width = 140),
+  ## update syncKey for loctor data after download syncable folders...
+  shiny::actionButton(icon = icon("comment-dots"), inputId = "site.update",
+                      label = "Update Site Names", width = 165)
   
 ) ## end of UI
 ## -----------------------------------------------------------------------------
@@ -437,12 +437,12 @@ server <- function(input, output, session) {
   }) ## end of click species check button
   
   ## Locator update click
-  observeEvent(input$notes.update, {
-    ## update locator sync states so they show up - make 1 higher than site SyncState
-    shinyalert("Updating...", "Cleaning up sites", type = "info", immediate = T)
-    source(paste0(app_path, "/Functions/notes_update.R"), local = T)
-    Sys.sleep(2)
-    shinyalert("Done!", "Site Notes Updating Complete", type = "success", immediate = T)
+  observeEvent(input$site.update, {
+    ## updating site name to USFS naming convertion based on shapefile
+    shinyalert("Updating...", "Updating site names...", type = "info", immediate = T)
+    source(paste0(app_path, "/Functions/vgs_name_update.R"), local = T)
+    Sys.sleep(1)
+    shinyalert("Done!", "Sites Names Updated!", type = "success", immediate = T)
   })
   ## End of Locator update button click
   
