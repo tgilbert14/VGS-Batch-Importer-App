@@ -2,7 +2,7 @@
 ## formatting site meta data
 
 # site_name <- historical_raw_data[grep("key", historical_raw_data[[1]], ignore.case = TRUE),][[2]]
-site_name <<- historical_raw_data[grep("siteID", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
+site_name <<- historical_raw_data[grep("site ID", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
 event_date <<- historical_raw_data[grep("date", historical_raw_data[[1]], ignore.case = TRUE), ][[2]]
 event_date <<- as.Date(as.numeric(event_date), origin = "1899-12-30")
 event_date <<- format(event_date, "%Y-%m-%d")
