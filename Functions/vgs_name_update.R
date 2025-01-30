@@ -13,6 +13,26 @@ library(tidyverse)
 db_loc <- "C:/ProgramData/VGSData/VGS50.db"
 ## connecting to VGS database
 mydb <- dbConnect(RSQLite::SQLite(), dbname = db_loc)
+
+## check if there is cloud data (syncState=0) -> need sites in correct
+## syncable folder ->
+
+site_lookup <- paste0("Select SiteID, SiteClass.ClassName, quote(Ck_parentClass) from Site
+INNER JOIN SiteClassLink on SiteClassLink.FK_Site = Site.PK_Site
+INNER JOIN SiteClass on SiteClass.PK_SiteClass = SiteClassLink.FK_SiteClass
+Where SiteClass.SyncState = 0")
+
+cloud.data<- dbGetQuery(mydb, site_lookup)
+## if no cloud data, stop app and give alert
+if (nrow(cloud.data) == 0) {
+  shinyalert("No cloud data found!",
+             paste0("Need to download correct folders and put sites into syncable folders first..."),
+  type = "error",
+  immediate = T
+  )
+  Sys.sleep(8)
+  stop("No cloud data: Need to download correct folders and put sites into syncable folders first...")
+}
 ## read in xlsx file with USFS shapefile/naming info
 pasture_info<- openxlsx::read.xlsx(paste0(app_path,"/www/Export.xlsx"))
 
@@ -24,10 +44,7 @@ pasture_info<- openxlsx::read.xlsx(paste0(app_path,"/www/Export.xlsx"))
 # pasture_names<- pasture_names %>% 
 #   filter(Forest_Number == '03')
 
-site_lookup <- paste0("Select SiteID, SiteClass.ClassName, quote(Ck_parentClass) from Site
-INNER JOIN SiteClassLink on SiteClassLink.FK_Site = Site.PK_Site
-INNER JOIN SiteClass on SiteClass.PK_SiteClass = SiteClassLink.FK_SiteClass
-Where SiteClass.SyncState = 0")
+
 ## dependent on download level...
 # class_lookup <- paste0("Select ClassName, quote(PK_SiteClass) from SiteClass
 # where SyncState = 0")
