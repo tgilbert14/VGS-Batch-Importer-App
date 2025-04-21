@@ -64,12 +64,16 @@ ui <- fluidPage(
   theme = shinytheme("slate"),
   titlePanel("Historical Data Importer"),
   br(),
-
+  ## to create new UI when needed (Surveys)
+  tags$div(id="newSidebar"),
+  
+  tags$div(id="sidebar",
   sidebarLayout(
     sidebarPanel(
+      
       checkboxInput("mode", "Power Mode?", value = F),
       checkboxInput("qaqc", "Use Species Replace?", value = F),
-      
+
       ## inputs for side dashboard
       shiny::selectInput(
         inputId = "Protocol",
@@ -131,11 +135,18 @@ ui <- fluidPage(
           ),
           #"Status...",
           withSpinner(tableOutput("status"))
-        ) ## end of tab panel - status
+        ),
+        tabPanel(
+          
+          shiny::actionButton(inputId = "survey", label = " Survey Import?", width = 140),
+          
+        )
+        ## end of tab panel - status
       ) ## end of tab set panel(s)
     ) ## end of box display
 
-  ), ## end of sidebar layout
+  )), ## end of sidebar layout and div tag
+  
   ## get species count by site after sites merged
   shiny::actionButton(icon = icon("pagelines"), inputId = "species_by_site",
                       label = "Count", width = 80),
@@ -224,6 +235,41 @@ server <- function(input, output, session) {
     }
   })
   ## end of UI drop downs ----
+  
+  
+  
+  observeEvent(input$survey, {
+    #req(input$survey)
+    
+    ## if Survey check box is enabled (Survey import instead of protocol)
+    if (input$survey == TRUE) {
+
+      ## update UI to import survey instead of protocol
+      removeUI("#sidebar")
+      
+      insertUI(
+        selector = "div:has(> #newSidebar)",
+        where = "afterEnd",
+        ui = 
+          sidebarPanel(
+            shiny::selectInput(
+              inputId = "survey",
+              label = "Select Survey for Import",
+              choices = c(
+                " " = "NULL",
+                "Coming Soon!",
+                "..."
+              ),
+              multiple = F, selected = F
+            ),
+            ## pop up UI's here after Protocol entry - see server side
+            shiny::actionButton(inputId = "create_survey", label = "Batch Import Data", width = "100%"),
+            br()
+          )
+      )
+    }
+      
+  })
   
   observeEvent(input$create, {
     req(input$Protocol)
