@@ -5,13 +5,13 @@
 
 ## After all fixes have taken place -> Run in 'power_mode=FALSE' which has various
 ## QA/QC checks. Must run through all batch data at once with no errors to work.
-options("rgdal_show_exportToProj4_warnings"="none")
 
+## Setting environment / global / libraries / app setup ----
+options("rgdal_show_exportToProj4_warnings"="none")
 ## set environment path
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 app_path <<- getwd()
-
-## global - libraries
+## global - libraries 
 library(shiny)
 library(shinythemes)
 library(shinycssloaders)
@@ -40,14 +40,15 @@ source(paste0(app_path, "/Functions/data_validation.R"), local = T)
 ## power mode will push past species insert errors but reference them in output.log
 # power_mode=TRUE
 power_mode <- FALSE
+
 ## test mode - TRUE to show DEV mode
 # test_mode=TRUE
 test_mode <- FALSE
 
 ## read in xlsx file with USFS shapefile/naming info
 pasture_info <<- openxlsx::read.xlsx("www/pasture_data.xlsx")
-
 ## -----------------------------------------------------------------------------
+
 ## Define UI
 ui <- fluidPage(
   tags$head(
@@ -64,9 +65,9 @@ ui <- fluidPage(
   theme = shinytheme("slate"),
   titlePanel("Historical Data Importer"),
   br(),
-  ## to create new UI when needed (Surveys)
+  ## to create new UI when needed (for SURVEYS)
   tags$div(id="newSidebar"),
-  
+  ## main sidebar for PROTOCOLS
   tags$div(id="sidebar",
   sidebarLayout(
     sidebarPanel(
@@ -74,7 +75,6 @@ ui <- fluidPage(
       checkboxInput("mode", "Power Mode?", value = F),
       checkboxInput("qaqc", "Use Species Replace?", value = F),
 
-      ## inputs for side dashboard
       shiny::selectInput(
         inputId = "Protocol",
         label = "Select Protocol for Import",
@@ -86,11 +86,8 @@ ui <- fluidPage(
         ),
         multiple = F, selected = F
       ),
-      ## pop up UI's here after Protocol entry - see server side
       shiny::actionButton(inputId = "create", label = "Batch Import Data", width = "100%"),
       br(),
-      #checkboxInput("spec_mode", "Use Special Insert?", value = F),
-      #br(),
  
       ## if test mode
       if (test_mode == TRUE) {
@@ -120,31 +117,26 @@ ui <- fluidPage(
         )
         ## end of power mode
       }
-    ), ## end of side bar panel
+      
+    ), ## end of sidebarPanel
     
-
-    ## output area of shiny app - box
+    ## main output area of shiny app - box
     shinydashboard::box(
       solidHeader = T, width = 8,
 
       tabsetPanel(
         type = "tabs",
-        tabPanel(
+        tabPanel( #tab panel 1
           div(style = "display: flex; justify-content: flex-start;",  # This will align the button to the right
               actionButton(inputId = "help", label = "", icon = icon("shrimp"), width = 40)
           ),
-          #"Status...",
           withSpinner(tableOutput("status"))
         ),
-        tabPanel(
-          
+        tabPanel( #tab panel 2
           shiny::actionButton(inputId = "survey", label = " Survey Import?", width = 140),
-          
         )
-        ## end of tab panel - status
-      ) ## end of tab set panel(s)
+      ) ## end of tab set panel(s) / panel set
     ) ## end of box display
-
   )), ## end of sidebar layout and div tag
   
   ## get species count by site after sites merged
@@ -158,12 +150,14 @@ ui <- fluidPage(
                       label = "Update Site Names", width = 165)
   
 ) ## end of UI
-## -----------------------------------------------------------------------------
 
-## -----------------------------------------------------------------------------
+
 ## Define server logic
 server <- function(input, output, session) {
-
+  
+  ## initial NULL Value - keeps spinner from showing at app load
+  output$status <- renderTable(NULL)
+  
   ## help pop up
   observeEvent(input$help, {
     
@@ -181,10 +175,7 @@ server <- function(input, output, session) {
     )
   })
   
-  ## initial NULL Value - keeps spinner from showing at app load
-  output$status <- renderTable(NULL)
-  
-  ## for UI drop downs ----
+  ## for PROTOCOL UI drop downs
   observe({
     ## check power
     power_mode <<- input$mode
@@ -234,13 +225,9 @@ server <- function(input, output, session) {
       removeUI("div:has(> #Protocol)")
     }
   })
-  ## end of UI drop downs ----
   
-  
-  
+  ## Survey Button Push - replace UI
   observeEvent(input$survey, {
-    #req(input$survey)
-    
     ## if Survey check box is enabled (Survey import instead of protocol)
     if (input$survey == TRUE) {
 
@@ -271,6 +258,7 @@ server <- function(input, output, session) {
       
   })
   
+  ## <-- PROTOCOLS -->
   observeEvent(input$create, {
     req(input$Protocol)
     
@@ -279,7 +267,7 @@ server <- function(input, output, session) {
     
     ## pointing to VGS functions for batch data import
     source(paste0(app_path, "/Functions/VGS_functions_R.R"), local = T)
-    source(paste0(app_path, "/Functions/historical_data_importer.R"), local = T)
+    source(paste0(app_path, "/Functions/historical_data_importer_protocol.R"), local = T)
     read_import_data(Protocol = input$Protocol, ServerKey = input$ServerKey, Protocol_2 = input$Protocol_2)
     
     ## updating attribute table/form settings when needed
@@ -342,7 +330,81 @@ server <- function(input, output, session) {
       
       data_log_output
     }) ## end of render table
-  }) ## end of observe event
+  }) ## end of PROTOCOL
+  
+  ## <-- SURVEYS -->
+  observeEvent(input$create_survey, {
+    req(input$survey)
+    
+    ## creating log file to track progress
+    sink("www/r_output.txt")
+    
+    ## pointing to VGS functions for batch data import
+    source(paste0(app_path, "/Functions/VGS_functions_R.R"), local = T)
+    source(paste0(app_path, "/Functions/historical_data_importer_survey.R"), local = T)
+    read_import_data(Protocol = input$survey, ServerKey = NULL)
+    
+    ## updating attribute table/form settings when needed
+    shinyalert("Updating...", "attributes to unhide data", type = "info", immediate = T)
+    source(paste0(app_path, "/Functions/attribute_update.R"), local = T)
+    Sys.sleep(1)
+    shinyalert("Done!", "Attributes Updated for Protocols", type = "success", immediate = T)
+    
+    ## concatenating siteID in front of site notes
+    shinyalert("Updating...", "Concatenating Site Notes and merging sites...", type = "info", immediate = T)
+    source(paste0(app_path, "/Functions/notes_update.R"), local = T)
+    Sys.sleep(1)
+    shinyalert("Done!", "Sites Merged", type = "success", immediate = T)
+    
+    ## pop up for species errors in VGS
+    shinyalert("Creating...", "QAQC workbook for data checks", type = "info", immediate = T)
+    source(paste0(app_path, "/Functions/species_qaqc_check.R"), local = T)
+    Sys.sleep(1)
+    shinyalert("Done!", "QAQC workbook created and opening...", type = "success", immediate = T)
+    
+    ## close connections from local VGS db
+    DBI::dbDisconnect(mydb)
+    closeAllConnections()
+    
+    d_process <- reactive({
+      data_log_output <- read.table("www/r_output.txt",
+                                    header = T,
+                                    fill = T, check.names = F, row.names = NULL,
+                                    na.strings = T
+      )
+    }) ## end of reactive data log
+    
+    output$status <- renderTable({
+      data_log_output <- d_process()
+      req(data_log_output)
+      
+      status_check <- substring(data_log_output[nrow(data_log_output), ],
+                                first = nchar(data_log_output[nrow(data_log_output), ]) - 24,
+                                last = nchar(data_log_output[nrow(data_log_output), ])
+      )
+      
+      ## if in power mode - different message
+      if (power_mode == TRUE) {
+        ## message for output log, pop up species update file
+        print("Use 'SpeciesReplace.xlsx' to update species that need to be corrected")
+        file.show(paste0(app_path, "/www/SpeciesReplace.xlsx"))
+        
+        shinyalert("Finished (In Power Mode)", "No data inserted into events, check log & QA/QC reports for errors", type = "warning", immediate = T)
+        print("Finished (In Power Mode): No data inserted into events, check log & QA/QC reports for errors")
+      }
+      
+      ## only if not in power mode
+      if (power_mode == FALSE) {
+        shinyalert("Niceee!", "**Batch Import Complete**",
+                   type = "success",
+                   closeOnClickOutside = F,
+                   immediate = T
+        )
+      }
+      
+      data_log_output
+    }) ## end of render table
+  }) ## end of SURVEY
   
   ## Count button click
   observeEvent(input$species_by_site, {
@@ -371,7 +433,7 @@ server <- function(input, output, session) {
     file.show(paste0(app_path, "/www/Conflicts/species_count_by_site.xlsx"))
   })
   
-  ## Species Check click
+  ## Species Check button click
   observeEvent(input$usda_check, {
     
     plant_files<- list.files("www/sp_lists_USDA/")
@@ -482,7 +544,7 @@ server <- function(input, output, session) {
 
   }) ## end of click species check button
   
-  ## Locator update click
+  ## Locator update button click
   observeEvent(input$site.update, {
     ## updating site name to USFS naming convertion based on shapefile
     shinyalert("Updating...", "Updating site names...", type = "info", immediate = T)
@@ -490,7 +552,6 @@ server <- function(input, output, session) {
     Sys.sleep(1)
     shinyalert("Done!", "Sites Names Updated!", type = "success", immediate = T)
   })
-  ## End of Locator update button click
   
   ## clear variables on stop
   onStop(function() {
@@ -503,6 +564,7 @@ server <- function(input, output, session) {
     suppressWarnings(DBI::dbDisconnect(mydb))
     suppressWarnings(closeAllConnections())
   })
+  
 } ## end of server
 ## -----------------------------------------------------------------------------
 
