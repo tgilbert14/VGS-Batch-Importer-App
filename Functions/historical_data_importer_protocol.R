@@ -16,8 +16,9 @@ read_import_data <<- function(Protocol, ServerKey, Protocol_2 = "NULL") {
   #ServerKey<<- ServerKey
   
   ## get species list from database
-  vgs_species_list_q <- paste0("SELECT PK_Species from Species where List = 'NRCS'")
-  vgs_species_list <<- dbGetQuery(mydb, vgs_species_list_q)
+  vgs_species_list_q <- "SELECT PK_Species from Species where List = ?list"
+  q <- sqlInterpolate(mydb, vgs_species_list_q, list = "NRCS")
+  vgs_species_list <<- dbGetQuery(mydb, q)
   
   ## get full species list from database
   vgs_species_list_q2 <- paste0("SELECT PK_Species, SpeciesName, CommonName from Species where List = 'NRCS'")
