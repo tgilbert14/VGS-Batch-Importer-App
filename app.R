@@ -34,6 +34,9 @@ library(rgdal)
 db_loc <<- "C:/ProgramData/VGSData/VGS50.db"
 mydb <<- dbConnect(RSQLite::SQLite(), dbname = db_loc)
 
+## this gets updated with a database query
+surveys_supported.log <<- c("")
+
 ## data validation function
 source(paste0(app_path, "/Functions/data_validation.R"), local = T)
 
@@ -133,7 +136,7 @@ ui <- fluidPage(
           withSpinner(tableOutput("status"))
         ),
         tabPanel( #tab panel 2
-          shiny::actionButton(inputId = "survey", label = " Survey Import?", width = 140),
+          shiny::actionButton(inputId = "survey", label = " Survey Log Import?", width = 140),
         )
       ) ## end of tab set panel(s) / panel set
     ) ## end of box display
@@ -230,6 +233,13 @@ server <- function(input, output, session) {
   observeEvent(input$survey, {
     ## if Survey check box is enabled (Survey import instead of protocol)
     if (input$survey == TRUE) {
+      
+      ## update surveys in the VGS database
+      query.surveys <- paste0("Select DISTINCT ListItem from TypeList Where List = 'SURVEY' Order by ListItem")
+      surveys_supported.log <<- dbGetQuery(mydb, query.surveys)
+      
+      # surveys_supported.log <<- c(" " = "NULL","NRCS IIRH V5 Evaluation",
+      #                             "NRCS Pasture Condition Score Sheet")
 
       ## update UI to import survey instead of protocol
       removeUI("#sidebar")
@@ -242,13 +252,15 @@ server <- function(input, output, session) {
             shiny::selectInput(
               inputId = "survey",
               label = "Select Survey for Import",
-              choices = c(
-                " " = "NULL",
-                "Coming Soon!",
-                "..."
-              ),
+              choices = c(surveys_supported.log),
               multiple = F, selected = F
             ),
+            
+            shiny::radioButtons("s.type",
+                                label = "Select Survey Type",
+                                choices = c("Log","Site","Folder"),
+                                selected = "Log"),
+            
             ## pop up UI's here after Protocol entry - see server side
             shiny::actionButton(inputId = "create_survey", label = "Batch Import Data", width = "100%"),
             br()
@@ -341,7 +353,7 @@ server <- function(input, output, session) {
     
     ## pointing to VGS functions for batch data import
     source(paste0(app_path, "/Functions/VGS_functions_R.R"), local = T)
-    source(paste0(app_path, "/Functions/historical_data_importer_survey.R"), local = T)
+    source(paste0(app_path, "/Functions/historical_data_importer_surveys.R"), local = T)
     read_import_data(Protocol = input$survey, ServerKey = NULL)
     
     ## updating attribute table/form settings when needed

@@ -26,7 +26,7 @@ read_import_data <<- function(Protocol, ServerKey) {
   vgs_species_list_least <<- dbGetQuery(mydb, vgs_species_list_q3)
   
   ## Save to parent environment for later
-  ServerKey <<- ServerKey
+  ServerKey <<- "Survey"
   Protocol <<- Protocol
   output_list <<- data.frame(FileNumber = numeric(), CompletedFileList = character())
   
@@ -35,7 +35,6 @@ read_import_data <<- function(Protocol, ServerKey) {
     default = "pick excel file(s)",
     multi = T, caption = "Select Historical Batch Data Files(s) to Import"
   )
-  
   
   ## variable to check if user selected anything 'the void'
   the_void <- character(0)
@@ -84,7 +83,7 @@ read_import_data <<- function(Protocol, ServerKey) {
     
     #print("Setting 'add_to_belt' var to NA")
     ## var to update belt # per file
-    add_to_belt<<- NA
+    #add_to_belt<<- NA ##dont need belts for surveys
     
     #print(paste0(add_to_belt," = add_to_belt"))
 
@@ -95,24 +94,24 @@ read_import_data <<- function(Protocol, ServerKey) {
     ## read specific batch file
     active_sheets <- excel_sheets(data_file[batch_file])
     
-    ## don't care about VGS species list tab / ref sheets
-    active_sheets <- active_sheets[active_sheets != "VGSDefaultSpeciesList"]
-    active_sheets <- active_sheets[active_sheets != "Species Richness"]
-    active_sheets <- trimws(active_sheets)
-    
-    ## reorder active sheets for R4 BT to make sure site is created 1st!
-    if (ServerKey == "USFS R4-BT") {
-      reorder_sheets <- active_sheets[active_sheets != "LPI All Lines (500 points)"]
-      reorder_sheets <- reorder_sheets[reorder_sheets != "Line Intercept (All Lines)"]
-      reorder_sheets <- reorder_sheets[reorder_sheets != "Production- 3 Transects"]
-      reorder_sheets <- reorder_sheets[reorder_sheets != "Production- 4 Transects"]
-      
-      reorder_sheets <- append(reorder_sheets, "LPI All Lines (500 points)")
-      reorder_sheets <- append(reorder_sheets, "Line Intercept (All Lines)")
-      reorder_sheets <- append(reorder_sheets, "Production- 3 Transects")
-      reorder_sheets <- append(reorder_sheets, "Production- 4 Transects")
-      active_sheets <- reorder_sheets
-    }
+    # ## don't care about VGS species list tab / ref sheets
+    # active_sheets <- active_sheets[active_sheets != "VGSDefaultSpeciesList"]
+    # active_sheets <- active_sheets[active_sheets != "Species Richness"]
+    # active_sheets <- trimws(active_sheets)
+    # 
+    # ## reorder active sheets for R4 BT to make sure site is created 1st!
+    # if (ServerKey == "USFS R4-BT") {
+    #   reorder_sheets <- active_sheets[active_sheets != "LPI All Lines (500 points)"]
+    #   reorder_sheets <- reorder_sheets[reorder_sheets != "Line Intercept (All Lines)"]
+    #   reorder_sheets <- reorder_sheets[reorder_sheets != "Production- 3 Transects"]
+    #   reorder_sheets <- reorder_sheets[reorder_sheets != "Production- 4 Transects"]
+    #   
+    #   reorder_sheets <- append(reorder_sheets, "LPI All Lines (500 points)")
+    #   reorder_sheets <- append(reorder_sheets, "Line Intercept (All Lines)")
+    #   reorder_sheets <- append(reorder_sheets, "Production- 3 Transects")
+    #   reorder_sheets <- append(reorder_sheets, "Production- 4 Transects")
+    #   active_sheets <- reorder_sheets
+    # }
     
     # Loop through each sheet and read the data into a data frame
     for (sheet_name in active_sheets) {
@@ -140,10 +139,6 @@ read_import_data <<- function(Protocol, ServerKey) {
       
       ## move site to correct folder or create parent folders
       print("next excel tab...")
-      
-      ## reset data frame - do not need, in function so value is not saved to global
-      #rm(data_import)
-      
     }
     
     print("next batch file...")
@@ -182,6 +177,7 @@ read_import_data <<- function(Protocol, ServerKey) {
     suppressWarnings(rm(site_notes_2))
     suppressWarnings(rm(site_PK))
     suppressWarnings(rm(slope))
+    suppressWarnings(rm(event_PK))
     
     ## saving completed files for output
     #output_list[batch_file, 1] <<- batch_file
@@ -213,17 +209,16 @@ batch_import <<- function(historical_raw_data) {
   ## SET KEY DATA --------------------------------------------------------------
   ## Site MetaData by ROW
   
-  ## separate key data out by chunks -> alter to find specific keys for batch import
-  ## alter the grep "pattern" in quotes to help find correct rows
+  ## this should mark a tab/sheet that has the metadata (site info) to create site
+  if (x == 1) { ## for now site data set to run for 1st tab only!
+    SiteCheck <- TRUE
+  } else {
+    SiteCheck <- FALSE
+  }
   
-  ## only does this is there is site meta data - formatting to all uppercase to check
-  ## if it is the first sheet/tab or it is a specific sheet tab name "Site Metadata",etc...
-  SiteCheck_R6_RR <- toupper(active_sheets[x]) == toupper("SiteMetaData")
-  ## meta data is on Nested Freq sheet for these specific ones
-  SiteCheck_R4_BT <- toupper(active_sheets[x]) == toupper("Nested Frequency Line 1")
   
   ## THIS SECTION IS FOR META-DATA/FOLDER CREATION/SITE CREATION/LOCATORS -->
-  if (SiteCheck_R6_RR == TRUE || SiteCheck_R4_BT == TRUE) {
+  if (SiteCheck == TRUE) {
     print(paste0("Reading ", active_sheets[x]))
     print(paste0("Found SiteData info for file ", batch_file, " -> ", active_sheets[x]))
     print(paste0("Identifying keys for ", active_sheets[x]))
@@ -245,15 +240,15 @@ batch_import <<- function(historical_raw_data) {
     ))
     
     ## finding meta data ->
-    if (ServerKey == "USFS R6-RR") {
-      source("scripts/USFS R6/R6_RR_site_info.R")
+    if (ServerKey == "Survey") {
+      source("scripts/Surveys/site_info.R")
     }
-    if (ServerKey == "USFS R4-BT") {
-      source("scripts/USFS R4/R4_BT_site_info.R")
-    }
-    if (ServerKey == "NRCS AZ") {
-      source("scripts/NRCS AZ/NRCS_AZ_site_info.R")
-    }
+    # if (ServerKey == "USFS R4-BT") {
+    #   source("scripts/USFS R4/R4_BT_site_info.R")
+    # }
+    # if (ServerKey == "NRCS AZ") {
+    #   source("scripts/NRCS AZ/NRCS_AZ_site_info.R")
+    # }
     
     ## variable manipulation ---->
     ##update to account for QAQC checks for new excel version
@@ -283,10 +278,9 @@ batch_import <<- function(historical_raw_data) {
     site_name <<- gsub("&", "-", site_name, fixed = T)
     
     print(paste0("Inserting data from ", active_sheets[x]," for ",site_name))
-    
-    ## Protocol2 IS NULL sometimes and gives warning - supressing it cuz I hate it...
+
     suppressWarnings(create_site(
-      ProtocolName = Protocol, ProtocolName_2 = Protocol2, SiteID = site_name,
+      ProtocolName = Protocol, SiteID = site_name,
       Event_Date = event_date, Elevation = elevation, Slope = slope, Aspect = aspect,
       DDLat = lat, DDLong = long, EventNotes = EventNotes, Notes = site_notes
     ))
@@ -299,32 +293,13 @@ batch_import <<- function(historical_raw_data) {
     print(paste0("Moving to/checking ", active_sheets[x]))
     
     ## RR key - nested freq - check protocols as well
-    if (ServerKey == "USFS R6-RR" &&
-        (Protocol == "USFS R6 Rogue River Standard" )) {
-      
-      ## inserting freq data
-      if (grepl("Belt",active_sheets[x], ignore.case = TRUE)) {
-        base::source("scripts/USFS R6/R6_RR_freq.R")
-      }
-      ## looking for specific LI tab
-      if (grepl("LineIntercept",active_sheets[x], ignore.case = TRUE)) {
-        base::source("scripts/USFS R6/R6_RR_lineIntercept.R")
-      }
-      
+    if (ServerKey == "Survey") {
+      #base::source("scripts/USFS R6/R6_RR_freq.R")
+      base::source("scripts/Surveys/inq_surveys.R")
+    } else {
+      stop("Missing ServerKey for Surveys")
     }
-    
-    ## BTNF key
-    if (ServerKey == "USFS R4-BT") {
-      ## insert freq and ground cover
-      base::source("scripts/USFS R4/R4_BT.R")
-    }
-    
-    ## NRCS AZ
-    if (ServerKey == "NRCS AZ") {
-      ## not done yet...
-      base::source("scripts/NRCS AZ/NRCS_AZ.R")
-    }
-    
+
     print(paste0("Finished ", active_sheets[x]))
     
   }
@@ -337,7 +312,7 @@ batch_import <<- function(historical_raw_data) {
 
 ## [[ 3rd function ]]
 ## CREATE SITE FUNCTION --------------------------------------------------------
-create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date, EventNotes = "NULL", DDLat = "NULL", DDLong = "NULL", IsPrimary = 1, Slope = "NULL", Aspect = "NULL", Elevation = "NULL", DateEstablished = "NULL", SyncKey = 33, SyncState = 1, FK_Species_Site = "'SITE_KEY'", FK_Species_SiteStatus = "'SST_ACTIVE'", FK_Species_ElevUnits = "'UNIT_FEET'", FK_Species_Locator = "'LOC_MARKER'", LocatorID = "NULL", L_Description = "NULL", L_Date = "NULL", LocatorElevation = "NULL", L_SyncKey = 33, L_SyncState = 1, DateEnd = "NULL", Bailiwick = "NULL", FK_SiteClass = "NULL") {
+create_site <<- function(SiteID, Notes, ProtocolName, Event_Date, EventNotes = "NULL", DDLat = "NULL", DDLong = "NULL", IsPrimary = 1, Slope = "NULL", Aspect = "NULL", Elevation = "NULL", DateEstablished = "NULL", SyncKey = 33, SyncState = 1, FK_Species_Site = "'SITE_KEY'", FK_Species_SiteStatus = "'SST_ACTIVE'", FK_Species_ElevUnits = "'UNIT_FEET'", FK_Species_Locator = "'LOC_MARKER'", LocatorID = "NULL", L_Description = "NULL", L_Date = "NULL", LocatorElevation = "NULL", L_SyncKey = 33, L_SyncState = 1, DateEnd = "NULL", Bailiwick = "SITELOG", FK_SiteClass = "NULL") {
   ## adding quotes if data present
   if (site_notes != "NULL" || is.na(site_notes) || length(site_notes) == 0) {
     site_notes <- paste0("'", site_notes, "'")
@@ -720,6 +695,7 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   ## inserting protocol 1 -->
   
   PK_Protocol <- GUID()
+  #ProtocolName <- "NRCS IIRH V5 Evaluation" ## for testing
   print(paste0("Making ", ProtocolName, " for - ", PK_Protocol))
   
   ## query to get correct FK_Type_Protocol from typelist by looking for ProtocolName
@@ -743,6 +719,7 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   if (length(FK_Type_Protocol) == 0) print(paste0(ProtocolName, " not in VGS -> import protocol first"))
   ## stop app
   if (length(FK_Type_Protocol) == 0) stop(paste0(ProtocolName, " not in VGS -> import protocol first"))
+  if (length(FK_Type_Protocol) > 1) stop(paste0(ProtocolName, " found twice in database!"))
   
   Attributes_raw <- TypeList_info$Attributes
   
@@ -761,7 +738,6 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   }
   ## End of variable manipulation
   
-  # print("")
   
   insert_protocol <- paste0("INSERT INTO Protocol
   (PK_Protocol
@@ -776,84 +752,37 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
   VALUES
   (", PK_Protocol, ",", FK_Type_Protocol, ",", Bailiwick, ",'", ProtocolName, "','", Event_Date, "',", DateEnd, ",", EventNotes, ",", SyncKey, ",", SyncState, ")")
   
-  ## log statment
+  ## log statement
   print(paste0("insert protocol"))
-  
-  # if (test_mode == "protocol") {
-  #   insert_protocol<<-insert_protocol
-  #   sink()
-  #   closeAllConnections()
-  #   print(insert_protocol)
-  #   stop("stop here to review")
-  # }
-  
   ## insert protocol into protocol table
   dbExecute(mydb, insert_protocol)
   
   ## update messages for function
   print(paste0("Creating Protocol Event for ", Event_Date))
+  ## get FK_Type for EventGroup
+  FK_TypeEventGroup.SurveyLog <- "x'7a13360586dd1e46bed5e27493805f0d'"
+  FK_TypeEventGroup.SurveySite <- "x'5bcb216decfbe548969996e934004458'"
+  FK_TypeEventGroup.SurveyFolder <- "x'57460d081dd9e742a3885a21ce6f6d67'"
   
-  ## then create EventGroups and Events-----------------------------------------
-  ## need attributes from typelist -> query from protocol insert
-  match_formIDs <- gregexpr("\\bFormID\\b", Attributes_raw) # \\b is word boundary
-  match_groupNames <- gregexpr("\\bFormName\\b", Attributes_raw)
-  match_attributes <- gregexpr("\\bFormAttributesXML\\b", Attributes_raw)
-  match_FK_Type_EventGroups <- gregexpr("\\bFK_Type_EventGroup\\b", Attributes_raw)
-  match_displayOrders <- gregexpr("\\bDisplayOrder\\b", Attributes_raw)
-  # match_isActive<- gregexpr("\\bIsActive\\b", Attributes_raw)
-  ## clearing all_forms variable if exists
-  suppressWarnings(rm(all_formIDs))
-  suppressWarnings(rm(all_groupNames))
-  suppressWarnings(rm(all_attributes))
-  suppressWarnings(rm(all_FK_Type_EventGroups))
-  suppressWarnings(rm(all_displayOrders))
-  suppressWarnings(rm(PK_EventGroup_GUIDS))
-  ## lists to store variables of attributes
-  all_formIDs <- list()
-  all_groupNames <- list()
-  all_attributes <- list()
-  all_FK_Type_EventGroups <- list()
-  all_displayOrders <- list()
-  PK_EventGroup_GUIDS <- list()
-  # all_isActive<- list()
+  ## Survey in Log
+  if (input$s.type == "Log") {
+    fk_type_EG <- FK_TypeEventGroup.SurveyLog
+    ## Survey in Site Description
+  } else if (input$s.type == "Site") {
+    fk_type_EG <- FK_TypeEventGroup.SurveySite
+    ## Survey in Folder Description
+  } else if (input$s.type == "Folder") {
+    fk_type_EG <- FK_TypeEventGroup.SurveyFolder
+    stop("Surveys for folders not implemented yet...")
+    ## Type not found
+  } else {
+    stop(paste0("No EventGroup.FK_Type found for this Survey: ",ProtocolName))
+  }
   
-  i <- 1
-  while (i < length(match_formIDs[[1]]) + 1) {
-    all_formIDs[i] <- substr(Attributes_raw, match_formIDs[[1]][i] + 7, match_formIDs[[1]][i + 1] - 3)
-    all_groupNames[i] <- paste0("'", substr(Attributes_raw, match_groupNames[[1]][i] + 9, match_groupNames[[1]][i + 1] - 3), "'")
-    all_attributes[i] <- paste0("'", substr(Attributes_raw, match_attributes[[1]][i] + 18, match_attributes[[1]][i + 1] - 3), "'")
-    all_FK_Type_EventGroups[i] <- substr(Attributes_raw, match_FK_Type_EventGroups[[1]][i] + 19, match_FK_Type_EventGroups[[1]][i + 1] - 3)
-    all_displayOrders[i] <- as.numeric(substr(Attributes_raw, match_displayOrders[[1]][i] + 13, match_displayOrders[[1]][i + 1] - 3))
-    # all_isActive[i]<- substr(Attributes_raw, match_isActive[[1]][i]+9, match_isActive[[1]][i+1]-3)
-    ## formatting xlm -->
-    all_attributes[i] <- gsub("&lt;", "<", all_attributes[i], fixed = T)
-    all_attributes[i] <- gsub("&gt;", ">", all_attributes[i], fixed = T)
-    all_attributes[i] <- gsub("[\r\n]", "", all_attributes[i], fixed = T)
-    all_attributes[i] <- gsub("amp;", "", all_attributes[i], fixed = T)
-    all_attributes[i] <- gsub("'", "", all_attributes[i], fixed = T)
-    
-    # all_groupNames[i] <- gsub("&lt;", "<", all_groupNames[i], fixed = T)
-    # all_groupNames[i] <- gsub("&gt;", ">", all_groupNames[i], fixed = T)
-    # all_groupNames[i] <- gsub("[\r\n]", "", all_groupNames[i], fixed = T)
-    all_groupNames[i] <- gsub("amp;", "", all_groupNames[i], fixed = T)
-    # all_groupNames[i] <- gsub("'", "", all_groupNames[i], fixed = T)
-    
-    
-    ## query for protocol correct guid for PK_Protocol
-    protocol_check <- paste0("Select quote(PK_Protocol) from Protocol
-           where PK_Protocol = ", PK_Protocol)
-    
-    protocol_pk_check <- dbGetQuery(mydb, protocol_check)
-    protocol_pk_check <- tolower(protocol_pk_check)
-    substr(protocol_pk_check, 2, 2) <- toupper(substr(protocol_pk_check, 2, 2))
-    
-    ## GUIDS in attributes are the wrong format ->
-    # PK_Protocol=paste0("X'1c988e6a3dea4741b8065235a92b00b0'")
-    if (i %in% c(1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25)) { ## if i is odd inset data
-      
-      PK_EventGroup_GUIDS[i] <- GUID()
-      
-      insert_eventGroup <- paste0("INSERT INTO EventGroup
+  ## insert EventGroup
+  PK_EventGroup_GUID <- GUID()
+  
+  insert_eventGroup <- paste0("INSERT INTO EventGroup
            (PK_EventGroup
            ,FK_Type_EventGroup
            ,FK_Protocol
@@ -864,111 +793,27 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
            ,SyncKey
            ,SyncState)
      VALUES
-           (", PK_EventGroup_GUIDS[[i]], ",", Hex(all_FK_Type_EventGroups[[i]]), ",", protocol_pk_check[[1]], ",'", all_attributes[[i]], "',", all_groupNames[[i]], ",", all_displayOrders[[i]], ",", Hex(all_formIDs[[i]]), ",", SyncKey, ",", SyncState, ")")
-      
-      ## log statment
-      print(paste0("insert event group to protocol"))
-      
-      # if (test_mode == "eventG") {
-      #   insert_eventGroup<<-insert_eventGroup
-      #   sink()
-      #   closeAllConnections()
-      #   print(insert_eventGroup)
-      #   stop("stop here to review")
-      # }
-      
-      ## insert eventGroups into eventGroup table
-      dbExecute(mydb, insert_eventGroup)
-    }
-    i <- i + 2
-  }
-  ## End of EventGroups
+           (", PK_EventGroup_GUID, ",", fk_type_EG, ",", PK_Protocol, ",NULL,'", ProtocolName, "',NULL,NULL,", SyncKey, ",", SyncState, ")")
   
-  ## Insert Events in each EventGroup/Events -----------------------------------
-  ## need attributes from typelist -> query from protocol insert
-  match_ParentFormIDs <- gregexpr("\\bParentFormID\\b", Attributes_raw)
-  match_EventAttributes <- gregexpr("\\bEventAttributesXML\\b", Attributes_raw)
-  match_FK_Type_Events <- gregexpr("\\FK_Type_Event\\b", Attributes_raw)
-  match_PageNumbers <- gregexpr("\\PageNumber\\b", Attributes_raw)
-  match_EntryOrders <- gregexpr("\\EntryOrder\\b", Attributes_raw)
-  match_EventNames <- gregexpr("\\EventName\\b", Attributes_raw)
-  match_DefaultEventIDs <- gregexpr("\\DefaultEventID\\b", Attributes_raw)
-  ## prepping list - removing if exists
-  suppressWarnings(rm(all_ParentformIDs))
-  suppressWarnings(rm(all_EventAttributes))
-  suppressWarnings(rm(all_FK_Type_Events))
-  suppressWarnings(rm(all_PageNumbers))
-  suppressWarnings(rm(all_EntryOrders))
-  suppressWarnings(rm(all_EventNames))
-  suppressWarnings(rm(all_DefaultEventIDs))
-  ## lists to store variables of attributes
-  all_ParentformIDs <- list()
-  all_EventAttributes <- list()
-  all_FK_Type_Events <- list()
-  all_PageNumbers <- list()
-  all_EntryOrders <- list()
-  all_EventNames <- list()
-  all_DefaultEventIDs <- list()
+  ## log statement
+  print(paste0("insert event group to protocol"))
+  ## insert eventGroups into eventGroup table
+  dbExecute(mydb, insert_eventGroup)
   
-  i <- 1
-  while (i < length(match_ParentFormIDs[[1]]) + 1) {
-    all_EventAttributes[i] <- paste0("'", substr(Attributes_raw, match_EventAttributes[[1]][i] + 19, match_EventAttributes[[1]][i + 1] - 3), "'")
-    all_FK_Type_Events[i] <- substr(Attributes_raw, match_FK_Type_Events[[1]][i] + 14, match_FK_Type_Events[[1]][i + 1] - 3)
-    all_ParentformIDs[i] <- substr(Attributes_raw, match_ParentFormIDs[[1]][i] + 13, match_ParentFormIDs[[1]][i + 1] - 3)
-    all_PageNumbers[i] <- substr(Attributes_raw, match_PageNumbers[[1]][i] + 11, match_PageNumbers[[1]][i + 1] - 3)
-    all_EntryOrders[i] <- substr(Attributes_raw, match_EntryOrders[[1]][i] + 11, match_EntryOrders[[1]][i + 1] - 3)
-    all_EventNames[i] <- paste0("'", substr(Attributes_raw, match_EventNames[[1]][i] + 10, match_EventNames[[1]][i + 1] - 3), "'")
-    all_DefaultEventIDs[i] <- substr(Attributes_raw, match_DefaultEventIDs[[1]][i] + 15, match_DefaultEventIDs[[1]][i + 1] - 3)
-    ## formatting xlm
-    all_EventAttributes[i] <- gsub("&lt;", "<", all_EventAttributes[i], fixed = T)
-    all_EventAttributes[i] <- gsub("&gt;", ">", all_EventAttributes[i], fixed = T)
-    all_EventAttributes[i] <- gsub("[\r\n]", "", all_EventAttributes[i], fixed = T)
-    all_EventAttributes[i] <- gsub("amp;", "", all_EventAttributes[i], fixed = T)
-    all_EventAttributes[i] <- gsub("'", "", all_EventAttributes[i], fixed = T)
-    
-    # all_EventNames[i] <- gsub("&lt;", "<", all_EventNames[i], fixed = T)
-    # all_EventNames[i] <- gsub("&gt;", ">", all_EventNames[i], fixed = T)
-    # all_EventNames[i] <- gsub("[\r\n]", "", all_EventNames[i], fixed = T)
-    # all_EventNames[i] <- gsub("amp;", "", all_EventNames[i], fixed = T)
-    # all_EventNames[i] <- gsub("'", "", all_EventNames[i], fixed = T)
-    
-    i <- i + 2
-  }
+  ## insert Event
+  PK_Event <- GUID()
+  ## save for inq insert
+  event_PK <<- PK_Event
   
-  ## matching unique PK_Groups with ParentFormID in attributes to connect correctly
-  PK_EG <- unique(unlist(PK_EventGroup_GUIDS))
-  Parent_Guid <- unique(unlist(all_ParentformIDs))
-  ## saving as data frame
-  eventGroup_match <- bind_cols(as.data.frame(PK_EG), as.data.frame(Parent_Guid))
+  ## Same for all 3 survey types
+  fk_type_Event <- Hex("{7D2BD56D-CEF3-46A0-8982-6DEFC970F77B}")
   
-  ## after inserting site -> query .db
-  ## retrieve PK value ---
-  site_check <- paste0("Select quote(PK_site) from site
-                        where PK_Site = ", PK_Site)
-  site_pk_check <- dbGetQuery(mydb, site_check)
-  site_pk_check <- tolower(site_pk_check)
-  substr(site_pk_check, 2, 2) <- toupper(substr(site_pk_check, 2, 2))
+  event_attributes <- Attributes_raw
   
+  ## clean the attributes for problematic characters
+  event_attributes <- gsub("'","",event_attributes)
   
-  i <- 1
-  while (i < length(all_ParentformIDs) + 1) {
-    if (i %in% c(1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25)) { ## if i is odd inset data
-      
-      PK_Event <- GUID()
-      
-      ## Look in attributes to see what Form is above the event to get correct PK_EventGroup GUID
-      ## ParentFormID tells which EventGroup they belong in
-      find_position <- grep(all_ParentformIDs[i], eventGroup_match$Parent_Guid)
-      FK_EventGroup <- eventGroup_match$PK_EG[find_position]
-      
-      ## query for protocol correct guid - PK_EventGroup
-      eventG_check <- paste0("Select quote(PK_EventGroup) from EventGroup
-                        where PK_EventGroup = ", FK_EventGroup)
-      eventG_pk_check <- dbGetQuery(mydb, eventG_check)
-      eventG_pk_check <- tolower(eventG_pk_check)
-      substr(eventG_pk_check, 2, 2) <- toupper(substr(eventG_pk_check, 2, 2))
-      
-      insert_events <- paste0("INSERT INTO Event
+  insert_event <- paste0("INSERT INTO Event
          (PK_Event
          ,FK_Type_Event
          ,FK_Site
@@ -982,25 +827,124 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
          ,SyncKey
          ,SyncState)
    VALUES
-         (", PK_Event, ",", Hex(all_FK_Type_Events[i]), ",", site_pk_check[[1]], ",", FK_SiteClass, ",", eventG_pk_check[[1]], ",", all_EventNames[i], ",'", all_EventAttributes[i], "',", all_PageNumbers[i], ",", all_EntryOrders[i], ",", Hex(all_DefaultEventIDs[i]), ",", SyncKey, ",", SyncState, ")")
-      
-      ## log statment
-      print(paste0("insert event to event group"))
-      
-      # if (test_mode == "events") {
-      #   insert_events<<-insert_events
-      #   sink()
-      #   closeAllConnections()
-      #   print(insert_eventGroup)
-      #   stop("stop here to review")
-      # }
-      
-      ## insert eventGroups into eventGroup table
-      dbExecute(mydb, insert_events)
-    }
-    i <- i + 2
+         (", PK_Event, ",", fk_type_Event, ",", PK_Site, ",", FK_SiteClass, ",", PK_EventGroup_GUID, ",'", ProtocolName, "','", event_attributes, "',NULL,NULL,NULL,", SyncKey, ",", SyncState, ")")
+
+  ## log statement
+  print(paste0("insert event to event group"))
+  
+  ## insert eventGroups into eventGroup table
+  dbExecute(mydb, insert_event)
+  
+  
+  
+  ## get attributes before trim
+  inq_att.pos.raw <- gregexpr("\\bAttributes\\b", Attributes_raw)
+  inq_comment.pos.raw <- gregexpr("\\bComment\\b", Attributes_raw)
+  
+  ## insert Inquiry Questions, find into in event.attributes
+  Attributes_trimmed<- gsub('"',"",Attributes_raw)
+  inq_pk.pos <- gregexpr("\\bPK_Question\\b", Attributes_trimmed)
+  inq_ck.pos <- gregexpr("\\bCK_Question\\b", Attributes_trimmed)
+  inq_id.pos <- gregexpr("\\bInquiryId\\b", Attributes_trimmed)
+  inq_fkItem.pos <- gregexpr("\\bFK_Items\\b", Attributes_trimmed)
+  inq_item.pos <- gregexpr("\\bItems\\b", Attributes_trimmed)
+  inq_text.pos <- gregexpr("\\bInquiryText\\b", Attributes_trimmed)
+  inq_att.pos <- gregexpr("\\bAttributes\\b", Attributes_trimmed)
+  inq_comment.pos <- gregexpr("\\bComment\\b", Attributes_trimmed)
+  inq_tip.pos <- gregexpr("\\bTip\\b", Attributes_trimmed)
+  inq_isExpanded.pos <- gregexpr("\\bIsExpanded\\b", Attributes_trimmed)
+  inq_tempType.pos <- gregexpr("\\bTemplateType\\b", Attributes_trimmed)
+  inq_sumType.pos <- gregexpr("\\bSummaryType\\b", Attributes_trimmed)
+  
+  ## run through inquiry to make new pk/ck connections
+  ## or will have unique constraint fail
+  pk_inq_list <- list() ## list of pk's
+  pos=1
+  while (pos < length(inq_id.pos[[1]])+1) {
+    pk_inq_list[pos] <- paste0(substr(Attributes_trimmed, inq_pk.pos[[1]][pos]+12, inq_pk.pos[[1]][pos]+47))
+    pos=pos+1
   }
+  pk_inq_list_unique <<-  unique(pk_inq_list)
+  
+  ## go through each pk and update attributes
+  pos=1
+  Attributes_trimmed.newPKS <- Attributes_trimmed
+  while(pos < length(pk_inq_list_unique)+1) {
+    ## sub old guild with a new guid where found in attributes
+    Attributes_trimmed.newPKS <- gsub(pk_inq_list_unique[[pos]], UUIDgenerate(), Attributes_trimmed.newPKS)
+    pos=pos+1
+  }
+  
+  pos=1
+  while (pos < length(inq_id.pos[[1]])+1) {
+    inquiry.pk <- paste0(substr(Attributes_trimmed.newPKS, inq_pk.pos[[1]][pos]+12, inq_pk.pos[[1]][pos]+47))
+    inquiry.ck <- paste0(substr(Attributes_trimmed.newPKS, inq_ck.pos[[1]][pos]+12, inq_id.pos[[1]][pos]-2))
+    inquiry.id <- paste0("'", substr(Attributes_trimmed.newPKS, inq_id.pos[[1]][pos]+10, inq_id.pos[[1]][pos]+19),"'")
+    inquiry.fkItem <- paste0(substr(Attributes_trimmed.newPKS, inq_fkItem.pos[[1]][pos]+9, inq_item.pos[[1]][pos]-2))
+    inquiry.text <- paste0("'", substr(Attributes_trimmed.newPKS, inq_text.pos[[1]][pos]+12, inq_att.pos[[1]][pos]-2),"'")
+    inquiry.tip <- paste0("'", substr(Attributes_trimmed.newPKS, inq_tip.pos[[1]][pos]+4, inq_isExpanded.pos[[1]][pos]-2),"'")
+    #inquiry.att <- paste0("'", substr(Attributes_trimmed.newPKS, inq_att.pos[[1]][pos]+11, inq_comment.pos[[1]][pos]-2),"'")
+    inq.att.raw <- paste0("'", substr(Attributes_raw, inq_att.pos.raw[[1]][pos]+12, inq_comment.pos.raw[[1]][pos]-3),"'")
+    
+    ## updating NULLs when possible
+    if (inquiry.ck == "null") {
+      inquiry.ck <- 'NULL'
+    } else {
+      inquiry.ck <- Hex(inquiry.ck)
+    }
+      
+    if (inquiry.fkItem == "null") {
+      inquiry.fkItem <- 'NULL'
+    } else {
+      inquiry.fkItem <- Hex(inquiry.fkItem)
+    }
+
+    if (inquiry.tip == "null") {
+      inquiry.tip <- 'NULL'
+    }
+    
+    insert_inq <- paste0("INSERT INTO Inquiry
+           (PK_Inquiry
+           ,FK_Event
+           ,FK_SpList
+           ,CK_Parent
+           ,InquiryID
+           ,Attributes
+           ,InquiryText
+           ,Comment
+           ,Tip
+           ,SyncKey
+           ,SyncState)
+     VALUES
+           (",Hex(inquiry.pk), ",",PK_Event, ",",inquiry.fkItem,",",inquiry.ck,",",inquiry.id, ",",inq.att.raw, ",",inquiry.text, ",NULL,NULL,", SyncKey,",",SyncState,")")
+    
+    ## log statment
+    print(paste0("insert inquiry questions: ",pos))
+    print(paste0("pk_inquiry: ",inquiry.pk))
+    print(paste0("ck_parent: ",inquiry.ck))
+    print(paste0("fk_spList: ",inquiry.fkItem))
+    dbExecute(mydb, insert_inq)
+    
+    pos=pos+1
+  }
+  
+  
+  
+  
+
+  ## clearing all_forms variable if exists
+  suppressWarnings(rm(all_formIDs))
+  suppressWarnings(rm(all_groupNames))
+  suppressWarnings(rm(all_attributes))
+  suppressWarnings(rm(all_FK_Type_EventGroups))
+  suppressWarnings(rm(all_displayOrders))
+  suppressWarnings(rm(PK_EventGroup_GUIDS))
+
   ## End of Events -------------------------------------------------------------
+  
+  
+  
+  
   
   
   ## update messages for function
@@ -1027,6 +971,10 @@ create_site <<- function(SiteID, Notes, ProtocolName, ProtocolName_2, Event_Date
 ## INSERT DATA FUNCTION --------------------------------------------------------
 ## insert statement to add data - nested frequency
 insert_data <<- function(data, FK_Event, method, FK_Species, Transect = "NULL", SampleNumber = "NULL", Element = "NULL", SubElement = "NULL", FieldSymbol, SpeciesQualifier = "NULL", FieldQualifier = "NULL", cParameter = "NULL", cParameter2 = "NULL", cParameter3 = "NULL", nValue = "NULL", nValue2 = "NULL", nValue3 = "NULL", cValue = "NULL", cValue2 = "NULL", cValue3 = "NULL", SyncKey, SyncState) {
+  
+  
+  stop("pausing in insert_data()... historical_data_importer_surveys.R")
+  
   
   ## If Nested Freq - reset values for insert for that specific method
   if (method == "NF") {
