@@ -1,18 +1,13 @@
-::: {#title style="display: flex;   flex-direction: row;   align-items: center;   justify-content: center;"}
-## ***VGS-Batch-Importer***
-:::
 
-::: {#main style="background-color: rgb(235, 246, 246);   padding: 10px;   border-radius: 5px;   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);   display: block;"}
+## ***VGS-Batch-Importer***
+
+
 This R Shiny application was built as an ETL pipeline to ingest batch historical excel datasheets into a SQLite database. [Generic Data Sheets](www/Generic%20Sheets%20for%20Data%20Import/NestedFreq_GC_LineIntercept_HistoricalDataEntry_2025.xlsm) were build with QA validations built in. This example allows for site, point ground cover, line intercept, and nested frequency data for multiple transects to be ingested for multiple sheets at a time.
 
 This app is specifically set to connect to a local [VGS](https://vgs.arizona.edu/) database. It can be adapted to be used for a variety of different digital data sheets that contain historical data in different formats. Basic structure works like so; reads data, parses data based on keys set in script (e.g., "SiteID" to find site name) and selected inputs from UI, organizes data, connects to local SQL database, creates and executes SQL insert statements to create site, site metadata, locations, protocols for event data (includes event groups and events in each eventgroup), then inserts sample data into each event. Various QA/QC checks are built in to prevent corrupt data from being inserted. Code can be seen at <https://github.com/tgilbert14/VGS-Batch-Importer-App>
-:::
 
-::: {#app-features style="display: flex;   flex-direction: row;   align-items: center;   justify-content: center;"}
 ## ***Applications Details***
-:::
 
-::: {#app-intro style="background-color: black;   padding: 10px;   border-radius: 5px;   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);   color: lightsalmon;   display: block;   width: 100%;   height: 100%;   position: inherit;"}
 ![*Main UI View*](assets/mainUI.jpg)
 
 The app interface has options to select protocols available for ingest. It has various options depending on the import:
@@ -34,9 +29,8 @@ The app interface has options to select protocols available for ingest. It has v
 -   **🦐** : This is a help button that provides general workflow for batch importing data with this app.
 
 -   **Survey Log Input?** : *This new feature offers survey (qualitative data) import with pre-built surveys. This section is still under development.*
-:::
 
-::: {#log style="background-color: rgb(235, 246, 246);   padding: 10px;   border-radius: 5px;   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);   display: block;"}
+
 ## App Screenshots
 
 ##### *Power Mode* ⏬
@@ -58,4 +52,4 @@ The app interface has options to select protocols available for ingest. It has v
 *This app also generates a log text file stored in the 'www/' folder to track code flow and debug import issues.* ⏬
 
 ![*www/r_output.txt log*](assets/logExample.jpg)
-:::
+
