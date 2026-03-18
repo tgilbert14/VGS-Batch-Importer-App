@@ -28,7 +28,7 @@ library(RSQLite)
 library(stringr)
 library(sf)
 library(sp)
-library(rgdal)
+#library(rgdal)
 
 ## SQL local Connection info from R to local VGS5 (VGS50.db)
 db_loc <<- "C:/ProgramData/VGSData/VGS50.db"

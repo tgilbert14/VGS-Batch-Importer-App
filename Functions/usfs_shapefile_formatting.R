@@ -11,7 +11,6 @@ options("rgdal_show_exportToProj4_warnings"="none")
 # library(uuid)
 # library(sf)
 # library(sp)
-# library(rgdal)
 
 #e.g., Region='04', Forest_Num='03'
 #usfs_folder_names(Region = "04", Forest_Num = "03")
@@ -19,9 +18,14 @@ options("rgdal_show_exportToProj4_warnings"="none")
 #usfs_folder_names()
 
 usfs_folder_names<- function(Region='NULL',Forest_Num='NULL') {
-  ##app_path set by app.R file
-  shapefile<- rgdal::readOGR(paste0(app_path,"/www/S_USA.Pasture"), "S_USA.Pasture")
-  pasture<- as.data.frame(shapefile)
+  # ##app_path set by app.R file
+  # shapefile<- rgdal::readOGR(paste0(app_path,"/www/S_USA.Pasture"), "S_USA.Pasture")
+  # pasture<- as.data.frame(shapefile)
+  
+  ## new version
+  shapefile <- sf::st_read(paste0(app_path,"/www/S_USA.Pasture"), "S_USA.Pasture")
+  pasture <- sf::st_drop_geometry(shapefile)
+  
   
   ## must have acres to be created - but keeping closed pastures for now
   pasture<- pasture %>% 
